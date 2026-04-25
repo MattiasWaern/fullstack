@@ -1,2 +1,2 @@
-# fullstack
-fullstack project
+# Book Review App Fullstack
+📚 Book Review App
