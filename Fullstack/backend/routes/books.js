@@ -46,4 +46,4 @@ router.delete('/:id', requireAuth, (req, res) => {
 
     db.prepare('DELETE FROM books WHERE id = ?').run(req.params.id);
     res.json({message: 'Boken borttagen'});
-})
+});
