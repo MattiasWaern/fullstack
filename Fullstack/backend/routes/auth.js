@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
-const jwt = require.apply('jsonwebtoken');
-const db = require('.../database');
+const jwt = require('jsonwebtoken');
+const db = require('../database');
 
 
 router.post('/register', (req, res) => {
