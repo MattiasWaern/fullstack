@@ -47,3 +47,14 @@ router.delete('/:id', requireAuth, (req, res) => {
     db.prepare('DELETE FROM books WHERE id = ?').run(req.params.id);
     res.json({message: 'Boken borttagen'});
 });
+
+router.get('/:id/reviews', (req, res) => {
+    const reviews = db.prepare(
+        `
+        SELECT reviews.*, users.username
+        FROM reviews JOIN users ON reviews.user_id = users.id
+        WHERE reviews.book_id = ?
+        ORDER BY reviews.created_at DESC
+        `).all(req.params.id);
+        res.json(reviews);
+});
