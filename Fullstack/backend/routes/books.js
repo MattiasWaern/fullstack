@@ -58,3 +58,5 @@ router.get('/:id/reviews', (req, res) => {
         `).all(req.params.id);
         res.json(reviews);
 });
+
+module.exports = router;
