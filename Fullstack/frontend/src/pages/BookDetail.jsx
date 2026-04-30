@@ -25,3 +25,16 @@ export default function BookDetail (){
 
     if(!book) return <p>Laddar...</p>
 }
+return (
+    <div style={{}}>
+        <h2>{book.title}</h2>
+        <p>{book.author}</p>
+        {book.description && <p>{book.description}</p>}
+
+        <h3>Recensioner</h3>
+
+        {isLoggedIn}(
+            
+        )
+    </div>
+)
