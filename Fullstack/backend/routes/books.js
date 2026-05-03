@@ -18,24 +18,24 @@ router.get('/', (req, res) => {
 });
 
 router.get('/:id', (req, res) => {
-    const book = db.prepare(
-        `
-        SELECT books.*, users.username as created_by_username,
+    const book = db.prepare(`
+        SELECT books.*, users.username as created_by_username
         FROM books LEFT JOIN users ON books.created_by = users.id
         WHERE books.id = ?
-        `).get(req.params.id);
-        if(!book) return res.status(404).json({error: 'Boken hittades inte'});
-        res.json(book);
+    `).get(req.params.id);
+    if (!book) return res.status(404).json({ error: 'Boken hittades inte' });
+    res.json(book);
 });
 
 router.post('/', requireAuth, (req, res) => {
-    const {title, author, description} = req.body;
+    const { title, author, description } = req.body;
     if (!title || !author)
-        return res.status(404).json({error: 'Titel och författare krävs'});
+        return res.status(400).json({ error: 'Titel och författare krävs' });
 
     const result = db.prepare(
         'INSERT INTO books (title, author, description, created_by) VALUES (?, ?, ?, ?)'
-    ).run.status(201).json({id: result.lastInsertRowId, title, author, description});
+    ).run(title, author, description, req.user.id);
+    res.status(201).json({ id: result.lastInsertRowid, title, author, description });
 });
 
 router.delete('/:id', requireAuth, (req, res) => {

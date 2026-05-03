@@ -15,7 +15,7 @@ export default function Login(){
         setError('');
 
         try{
-            const {data} = await api.post(`/auth${mode}`, {username, password});
+            const {data} = await api.post(`/auth/${mode}`, {username, password});
             if (mode === 'login'){
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('username', data.username);

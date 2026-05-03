@@ -28,7 +28,7 @@ router.post('/login', (req, res) => {
         return res.status(401).json({error: 'Fel användarnamn eller lösenord'});
 
 
-    const token = jwt.sign({id: user.id, usename: user.username}, process.env.JWT_SECRET, {expiresIn: '7d'});
+    const token = jwt.sign({id: user.id, username: user.username}, process.env.JWT_SECRET, {expiresIn: '7d'});
     res.json({token, username: user.username});
 });
 
