@@ -11,7 +11,7 @@ export default function Profile(){
 
     useEffect(() => {
         if(!username) {navigate('/login'); return;}
-        api.get('/reviews/mine').then(reviews => setReviews(r.data));
+        api.get('/reviews/mine').then(r => setReviews(r.data));
 
     }, []);
 
@@ -33,6 +33,12 @@ export default function Profile(){
       <div className="flex flex-col gap-3">
         {reviews.map(r => (
           <Link to={`/books/${r.book_id}`} key={r.id} className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+             <img
+                src={r.cover_url || `https://covers.openlibrary.org/b/id/1-M.jpg`}
+                alt={r.book_title}
+                className="w-12 h-18 object-cover rounded shadow-sm flex-shrink-0"
+                onError={e => e.target.src = 'https://via.placeholder.com/48x72?text=Bok'}
+                />
             <p className="font-semibold text-[#382110]">{r.book_title}</p>
             <StarRating rating={r.rating} />
             <p className="text-gray-600 text-sm mt-1">{r.text}</p>

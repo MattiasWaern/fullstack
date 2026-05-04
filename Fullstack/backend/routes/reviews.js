@@ -6,7 +6,7 @@ const requireAuth = require ('../middleware/auth');
 
 router.get('/mine', requireAuth, (req, res) => {
   const reviews = db.prepare(`
-    SELECT reviews.*, books.title as book_title
+    SELECT reviews.*, books.title as book_title, books.cover_url
     FROM reviews
     JOIN books ON reviews.book_id = books.id
     WHERE reviews.user_id = ?
