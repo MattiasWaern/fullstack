@@ -3,16 +3,23 @@ import { useState } from "react";
 export default function BookSearch({onSelect}){
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
-    const [loading, setLoading] =(false);
+    const [loading, setLoading] = useState(false);
 
-    async function search(){
-        if(!query.trim()) return;
-        setLoading(true);
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6`);
-        const data = await res.json();
-        setResults(data.items || []);
-        setLoading(false);
-    }
+   async function search() {
+  if (!query.trim()) return;
+  setLoading(true);
+  const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=6`);
+  const data = await res.json();
+  const items = data.docs.map(book => ({
+    id: book.key,
+    title: book.title,
+    author: book.author_name?.join(', ') || 'Okänd',
+    description: '',
+    cover_url: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : '',
+  }));
+  setResults(items);
+  setLoading(false);
+}
 
      return (
     <div className="mb-6">
@@ -34,32 +41,28 @@ export default function BookSearch({onSelect}){
 
       {results.length > 0 && (
         <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          {results.map(item => {
-            const info = item.volumeInfo;
-            const cover = info.imageLinks?.thumbnail;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  onSelect({
-                    title: info.title,
-                    author: info.authors?.join(', ') || 'Okänd',
-                    description: info.description || '',
-                    cover_url: cover || '',
-                  });
-                  setResults([]);
-                  setQuery('');
-                }}
-                className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-[#f4f1ea] border-b border-gray-100 last:border-0"
-              >
-                {cover && <img src={cover} alt={info.title} className="w-8 h-12 object-cover rounded" />}
-                <div>
-                  <p className="font-medium text-sm text-[#382110]">{info.title}</p>
-                  <p className="text-xs text-gray-500">{info.authors?.join(', ')}</p>
-                </div>
-              </button>
-            );
-          })}
+   {results.map(item => (
+  <button
+    key={item.id}
+    onClick={() => {
+      onSelect({
+        title: item.title,
+        author: item.author,
+        description: item.description,
+        cover_url: item.cover_url,
+      });
+      setResults([]);
+      setQuery('');
+    }}
+    className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-[#f4f1ea] border-b border-gray-100 last:border-0"
+  >
+    {item.cover_url && <img src={item.cover_url} alt={item.title} className="w-8 h-12 object-cover rounded" />}
+    <div>
+      <p className="font-medium text-sm text-[#382110]">{item.title}</p>
+      <p className="text-xs text-gray-500">{item.author}</p>
+    </div>
+  </button>
+))}
         </div>
       )}
     </div>

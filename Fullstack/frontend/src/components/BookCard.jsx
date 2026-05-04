@@ -7,12 +7,12 @@ export default function BookCard({ book }) {
       to={`/books/${book.id}`}
       className="flex gap-4 p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-100"
     >
-      <img>
+      <img
         src={book.cover_url || `https://covers.openlibrary.org/b/id/1-M.jpg`}
         alt={book.title}
         className ="w-16 h-24 object-cover rounded shadow-sm flex-shrink-0 bg-gray-200" 
         onError= {(e) => (e.target.src = "https://via.placeholder.com/64x64?text=Bok")}
-      </img>
+      />
 
       <div className="flex flex-col justify-between">
         <div>

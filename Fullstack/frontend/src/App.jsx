@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import { Book } from 'lucide-react';
 import './index.css'
 import Navbar from './components/Navbar';
+import Profile from './pages/Profile';
 
 
 
@@ -14,12 +15,12 @@ export default function App () {
 
   return(
     <BrowserRouter>
-      <Nav />
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/books/:id" element={<BookDetail />} />
         <Route path="/login" element={<Login />} />
-        
+        <Route path="/profile" element={Profile}></Route>
       </Routes>
     </BrowserRouter>
   );

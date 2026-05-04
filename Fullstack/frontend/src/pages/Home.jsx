@@ -16,7 +16,7 @@ export default function Home(){
   }
 
     const filtered = books.filter(b => 
-      b.title.toLowerCase().include(filter.toLocaleLowerCase()) ||
+      b.title.toLowerCase().includes(filter.toLocaleLowerCase()) ||
       b.author.toLocaleLowerCase().includes(filter.toLowerCase())
     );
 

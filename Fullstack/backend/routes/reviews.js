@@ -3,6 +3,18 @@ const db = require('../database');
 const requireAuth = require ('../middleware/auth');
 
 
+
+router.get('/mine', requireAuth, (req, res) => {
+  const reviews = db.prepare(`
+    SELECT reviews.*, books.title as book_title
+    FROM reviews
+    JOIN books ON reviews.book_id = books.id
+    WHERE reviews.user_id = ?
+    ORDER BY reviews.created_at DESC
+  `).all(req.user.id);
+  res.json(reviews);
+});
+
 router.post('/', requireAuth, (req, res) => {
     const { book_id, rating, text} = req.body;
     if(!book_id || !rating || !text)
