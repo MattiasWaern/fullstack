@@ -10,51 +10,67 @@ export default function BookSearch({ onSelect }) {
 
     setLoading(true);
 
-    // Simple general search without quotes
-    const res = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
-        query
-      )}&maxResults=15&langRestrict=en&orderBy=relevance&printType=books`
-    );
+    try {
+      // Gör två sökningar - en för titel och en för författare
+      const [titleRes, authorRes] = await Promise.all([
+        fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(
+            query
+          )}&maxResults=10&langRestrict=en&orderBy=relevance&printType=books`
+        ),
+        fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=inauthor:${encodeURIComponent(
+            query
+          )}&maxResults=10&langRestrict=en&orderBy=relevance&printType=books`
+        )
+      ]);
 
-    const data = await res.json();
+      const titleData = await titleRes.json();
+      const authorData = await authorRes.json();
 
-    const items = data.items
-      ?.map((item) => {
-        const b = item.volumeInfo;
+      // Kombinera resultaten
+      const titleItems = titleData.items || [];
+      const authorItems = authorData.items || [];
+      
+      // Slå ihop, ta bort dubbletter baserat på id
+      const allItems = [...titleItems, ...authorItems];
+      const uniqueItems = allItems.filter((item, index, self) =>
+        index === self.findIndex((t) => t.id === item.id)
+      );
 
-        return {
-          id: item.id,
-          title: b.title || "Okänd titel",
-          author: b.authors?.join(", ") || "Okänd",
-          description: b.description || "",
-          pages: b.pageCount || "",
-          genre: b.categories?.[0] || "",
-          cover_url: b.imageLinks?.thumbnail || "",
-        };
-      })
-      .filter((book) => {
-        const queryLower = query.toLowerCase();
-        const titleLower = book.title.toLowerCase();
-        const authorLower = book.author.toLowerCase();
-        const searchTerms = queryLower.split(" ");
-        
-        // Check if query matches title OR author
-        const titleMatch = searchTerms.every(term => titleLower.includes(term));
-        const authorMatch = searchTerms.every(term => authorLower.includes(term));
-        
-        return titleMatch || authorMatch;
-      }) || [];
+      const items = uniqueItems
+        .map((item) => {
+          const b = item.volumeInfo;
 
-    // Remove duplicates based on title and author combination
-    const uniqueItems = items.filter((item, index, self) =>
-      index === self.findIndex((t) => (
-        t.title === item.title && t.author === item.author
-      ))
-    );
+          return {
+            id: item.id,
+            title: b.title || "Okänd titel",
+            author: b.authors?.join(", ") || "Okänd",
+            description: b.description || "",
+            pages: b.pageCount || "",
+            genre: b.categories?.[0] || "",
+            cover_url: b.imageLinks?.thumbnail || "",
+          };
+        })
+        .filter((book) => {
+          const queryLower = query.toLowerCase();
+          const titleLower = book.title.toLowerCase();
+          const authorLower = book.author.toLowerCase();
+          const searchTerms = queryLower.split(" ");
+          
+          // Matcha om ALLA söktermer finns i antingen titeln ELLER författaren
+          return searchTerms.every(term => 
+            titleLower.includes(term) || authorLower.includes(term)
+          );
+        }) || [];
 
-    setResults(uniqueItems.slice(0, 6));
-    setLoading(false);
+      setResults(items.slice(0, 6));
+    } catch (error) {
+      console.error("Sökningen misslyckades:", error);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
