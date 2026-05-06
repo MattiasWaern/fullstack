@@ -51,6 +51,11 @@ export default function BookDetail() {
           {book.description && (
             <p className="text-gray-600 text-sm mt-3 leading-relaxed line-clamp-4">{book.description}</p>
           )}
+          {book.genre && (
+          <span className="inline-block mt-2 px-3 py-1 bg-[#f4f1ea] text-[#382110] text-xs rounded-full border border-[#d4c5a9]">
+            {book.genre}
+          </span>
+        )}
         </div>
       </div>
 

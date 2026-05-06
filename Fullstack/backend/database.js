@@ -15,6 +15,7 @@ db.exec(`
     author TEXT NOT NULL,
     description TEXT,
     cover_url TEXT,
+    genre TEXT,
     created_by INTEGER REFERENCES users(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );

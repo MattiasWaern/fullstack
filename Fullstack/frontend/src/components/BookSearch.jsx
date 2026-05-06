@@ -16,6 +16,7 @@ export default function BookSearch({onSelect}){
     author: book.author_name?.join(', ') || 'Okänd',
     description: '',
     cover_url: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : '',
+    genre: book.subject?.[0] || '',
   }));
   setResults(items);
   setLoading(false);
@@ -50,6 +51,7 @@ export default function BookSearch({onSelect}){
         author: item.author,
         description: item.description,
         cover_url: item.cover_url,
+        genre: item.genre,
       });
       setResults([]);
       setQuery('');

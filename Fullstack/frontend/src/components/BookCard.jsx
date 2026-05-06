@@ -20,6 +20,11 @@ export default function BookCard({ book }) {
             {book.title}
           </h3>
           <p className="text-gray-500 text-sm">{book.author}</p>
+          {book.genre && (
+            <span className="inline-block mt-1 px-2 py-0.5 bg-[#f4f1ea] text-[#382110] text-xs rounded-full border border-[#d4c5a9]">
+              {book.genre}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <StarRating rating={Math.round(book.avg_rating || 0)} />

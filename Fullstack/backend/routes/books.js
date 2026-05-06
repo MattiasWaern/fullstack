@@ -28,14 +28,14 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', requireAuth, (req, res) => {
-  const { title, author, description, cover_url } = req.body;
+  const { title, author, description, cover_url, genre } = req.body;
   if (!title || !author)
     return res.status(400).json({ error: 'Titel och författare krävs' });
 
   const result = db.prepare(
-    'INSERT INTO books (title, author, description, cover_url, created_by) VALUES (?, ?, ?, ?, ?)'
-  ).run(title, author, description, cover_url, req.user.id);
-  res.status(201).json({ id: result.lastInsertRowid, title, author, description, cover_url });
+    'INSERT INTO books (title, author, description, cover_url, genre, created_by) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(title, author, description, cover_url, genre, req.user.id);
+  res.status(201).json({ id: result.lastInsertRowid, title, author, description, cover_url, genre });
 });
 
 router.delete('/:id', requireAuth, (req, res) => {
