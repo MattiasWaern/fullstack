@@ -25,6 +25,15 @@ export default function BookCard({ book }) {
               {book.genre}
             </span>
           )}
+          {book.pages ? (
+  <p className="text-xs text-gray-400">{book.pages} sidor</p>
+) : null}
+
+          {book.description && (
+            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+              {book.description}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <StarRating rating={Math.round(book.avg_rating || 0)} />
