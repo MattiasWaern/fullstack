@@ -169,7 +169,7 @@ export default function BookDetail() {
                 <h3 className="font-['Georgia',_'Times_New_Roman',_serif'] text-sm font-bold text-[#382110] mb-2">
                   Beskrivning
                 </h3>
-                <p className="text-sm text-[#555] leading-relaxed line-clamp-6">
+                <p className="text-sm text-[#555] leading-relaxed line-clamp-80">
                   {book.description}
                 </p>
               </div>
