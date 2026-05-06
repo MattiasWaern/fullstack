@@ -1,16 +1,18 @@
-import { use, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import api from '../api';
 import StarRating from "../components/StarRating";
 
 export default function BookDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [book, setBook] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(3);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const isLoggedIn = !!localStorage.getItem('token');
+  const username = localStorage.getItem('username');
 
   useEffect(() => {
     api.get(`/books/${id}`).then(r => setBook(r.data));
@@ -22,11 +24,21 @@ export default function BookDetail() {
     setError('');
     try {
       const { data } = await api.post('/reviews', { book_id: id, rating, text });
-      setReviews(prev => [{ ...data, username: localStorage.getItem('username') }, ...prev]);
+      setReviews(prev => [{ ...data, username }, ...prev]);
       setText('');
       setRating(3);
     } catch (err) {
       setError(err.response?.data?.error || 'Något gick fel');
+    }
+  }
+
+  async function deleteBook() {
+    if (!window.confirm(`Är du säker på att du vill ta bort "${book.title}"?`)) return;
+    try {
+      await api.delete(`/books/${id}`);
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Kunde inte ta bort boken');
     }
   }
 
@@ -35,6 +47,8 @@ export default function BookDetail() {
       <p className="text-gray-400">Laddar...</p>
     </div>
   );
+
+  const isOwner = username === book.created_by_username;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -45,17 +59,27 @@ export default function BookDetail() {
           className="w-28 h-44 object-cover rounded shadow-md flex-shrink-0"
           onError={e => e.target.src = 'https://via.placeholder.com/120x180?text=Bok'}
         />
-        <div>
-          <h1 className="text-3xl font-bold text-[#382110]">{book.title}</h1>
+        <div className="flex-1">
+          <div className="flex items-start justify-between">
+            <h1 className="text-3xl font-bold text-[#382110]">{book.title}</h1>
+            {isOwner && (
+              <button
+                onClick={deleteBook}
+                className="text-red-400 hover:text-red-600 text-sm border border-red-200 hover:border-red-400 px-3 py-1 rounded-full transition-colors ml-4 flex-shrink-0"
+              >
+                🗑 Ta bort bok
+              </button>
+            )}
+          </div>
           <p className="text-gray-500 mt-1">{book.author}</p>
+          {book.genre && (
+            <span className="inline-block mt-2 px-3 py-1 bg-[#f4f1ea] text-[#382110] text-xs rounded-full border border-[#d4c5a9]">
+              {book.genre}
+            </span>
+          )}
           {book.description && (
             <p className="text-gray-600 text-sm mt-3 leading-relaxed line-clamp-4">{book.description}</p>
           )}
-          {book.genre && (
-          <span className="inline-block mt-2 px-3 py-1 bg-[#f4f1ea] text-[#382110] text-xs rounded-full border border-[#d4c5a9]">
-            {book.genre}
-          </span>
-        )}
         </div>
       </div>
 
@@ -84,7 +108,7 @@ export default function BookDetail() {
           </form>
         )}
 
-        {reviews.length === 0 && <p className="text-gray-400">Inga recensioner än — var först!</p>}
+        {reviews.length === 0 && <p className="text-gray-400">Inga recensioner än, var först!</p>}
         <div className="flex flex-col gap-3">
           {reviews.map(r => (
             <div key={r.id} className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
