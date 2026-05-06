@@ -11,29 +11,35 @@ export default function BookSearch({ onSelect }) {
     setLoading(true);
 
     try {
-      // Gör två sökningar - en för titel och en för författare
-      const [titleRes, authorRes] = await Promise.all([
+      // Gör tre olika sökningar för bästa täckning
+      const queries = [
+        // Exakt fras-sökning (för hela titlar)
+        fetch(
+          `https://www.googleapis.com/books/v1/volumes?q="${encodeURIComponent(
+            query
+          )}"&maxResults=8&langRestrict=en&orderBy=relevance&printType=books`
+        ),
+        // Generell sökning (fångar det mesta)
+        fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
+            query
+          )}&maxResults=8&langRestrict=en&orderBy=relevance&printType=books`
+        ),
+        // Titelsökning
         fetch(
           `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(
             query
-          )}&maxResults=10&langRestrict=en&orderBy=relevance&printType=books`
-        ),
-        fetch(
-          `https://www.googleapis.com/books/v1/volumes?q=inauthor:${encodeURIComponent(
-            query
-          )}&maxResults=10&langRestrict=en&orderBy=relevance&printType=books`
+          )}&maxResults=8&langRestrict=en&orderBy=relevance&printType=books`
         )
-      ]);
+      ];
 
-      const titleData = await titleRes.json();
-      const authorData = await authorRes.json();
+      const responses = await Promise.all(queries);
+      const dataArrays = await Promise.all(responses.map(r => r.json()));
 
-      // Kombinera resultaten
-      const titleItems = titleData.items || [];
-      const authorItems = authorData.items || [];
+      // Kombinera alla resultat
+      const allItems = dataArrays.flatMap(data => data.items || []);
       
-      // Slå ihop, ta bort dubbletter baserat på id
-      const allItems = [...titleItems, ...authorItems];
+      // Ta bort dubbletter baserat på id
       const uniqueItems = allItems.filter((item, index, self) =>
         index === self.findIndex((t) => t.id === item.id)
       );
@@ -58,13 +64,26 @@ export default function BookSearch({ onSelect }) {
           const authorLower = book.author.toLowerCase();
           const searchTerms = queryLower.split(" ");
           
-          // Matcha om ALLA söktermer finns i antingen titeln ELLER författaren
-          return searchTerms.every(term => 
+          // Mer flexibel matchning - minst hälften av orden ska matcha
+          const matchingTerms = searchTerms.filter(term => 
             titleLower.includes(term) || authorLower.includes(term)
           );
+          
+          // Kräv att minst hälften av söktermerna matchar
+          return matchingTerms.length >= Math.ceil(searchTerms.length / 2);
         }) || [];
 
-      setResults(items.slice(0, 6));
+      // Sortera efter relevans - titlar som innehåller hela frasen först
+      const sortedItems = items.sort((a, b) => {
+        const aTitleMatch = a.title.toLowerCase().includes(query.toLowerCase());
+        const bTitleMatch = b.title.toLowerCase().includes(query.toLowerCase());
+        
+        if (aTitleMatch && !bTitleMatch) return -1;
+        if (!aTitleMatch && bTitleMatch) return 1;
+        return 0;
+      });
+
+      setResults(sortedItems.slice(0, 6));
     } catch (error) {
       console.error("Sökningen misslyckades:", error);
       setResults([]);
@@ -127,7 +146,10 @@ export default function BookSearch({ onSelect }) {
       )}
       
       {results.length === 0 && !loading && query && (
-        <p className="text-sm text-gray-500 mt-2">Inga resultat hittades</p>
+        <div className="text-sm text-gray-500 mt-2">
+          <p>Inga resultat hittades för "{query}"</p>
+          <p className="text-xs mt-1">Tips: Testa att söka på delar av titeln eller författarens namn</p>
+        </div>
       )}
     </div>
   );
