@@ -23,6 +23,24 @@ export default function Home(){
     );
 
    return (
-    
+      <div className="min-h-screen bg-[#f4f1ea]">
+
+
+        {/* HERO */}
+        <div className="bg-[#382110] text-white py-12 px-6 text-center">
+          <h1 className="text-4xl font-bold mb-2">Välkommen till MyReads</h1>
+          <p className="text-[#e8d5b7] text-lg mb-6">Upptäck böcker, dela recensioner & håll koll på vad du har läst</p>
+          {isLoggedIn && (
+            <button onClick={() => setShowAdd(!showAdd)}
+                    className="bg-[#e8871a] hover:bg-[#d4771a] text-white px-6 py-2 rounded-full font-mediu transition-colors "     
+            >
+              {showAdd ? 'Stäng' : '+ Lägg till en bok'}
+            </button>
+          )}
+        </div>
+
+
+        
+      </div>
   );
 }
