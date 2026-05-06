@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const db = new Database('books.db');
 
+// Skapa tabeller om de inte finns
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,5 +30,18 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+// Lägg till nya kolumner om de saknas (migration)
+function addColumnIfMissing(table, column, type) {
+  const columns = db.pragma(`table_info(${table})`).map(c => c.name);
+  if (!columns.includes(column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    console.log(` Lade till kolumn: ${table}.${column}`);
+  }
+}
+
+addColumnIfMissing('books', 'cover_url', 'TEXT');
+addColumnIfMissing('books', 'description', 'TEXT');
+addColumnIfMissing('books', 'genre', 'TEXT');
 
 module.exports = db;
