@@ -5,20 +5,47 @@ export default function BookSearch({onSelect}){
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
 
-   async function search() {
+function cleanDescription(text) {
+  if (!text) return '';
+  // Ta bort marknadsföringsrader och trunkera
+  const lines = text.split('\n').filter(line => 
+    !line.includes('•') &&
+    !line.includes('bestseller') &&
+    !line.includes('Best Books') &&
+    !line.includes('New York Times') &&
+    !line.includes('Amazon') &&
+    !line.includes('Apple') &&
+    !line.includes('Barnes') &&
+    !line.includes('Audible') &&
+    !line.includes('Google Play') &&
+    line.trim().length > 0
+  );
+  const clean = lines.join(' ').trim();
+  return clean.length > 300 ? clean.slice(0, 300) + '...' : clean;
+}
+
+
+async function search() {
   if (!query.trim()) return;
   setLoading(true);
-  const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=6`);
-  const data = await res.json();
-  const items = data.docs.map(book => ({
-    id: book.key,
-    title: book.title,
-    author: book.author_name?.join(', ') || 'Okänd',
-    description: '',
-    cover_url: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : '',
-    genre: book.subject?.[0] || '',
-  }));
-  setResults(items);
+  try {
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6&langRestrict=sv`);
+    const data = await res.json();
+    const items = (data.items || []).map(item => {
+      const info = item.volumeInfo;
+      return {
+        id: item.id,
+        title: info.title || '',
+        author: info.authors?.join(', ') || 'Okänd',
+        description: cleanDescription(info.description),
+        cover_url: info.imageLinks?.thumbnail?.replace('http://', 'https://') || '',
+        genre: info.categories?.join(', ') || '',
+      };
+    });
+    setResults(items);
+  } catch (err) {
+    console.error('Sökning misslyckades:', err);
+  }
   setLoading(false);
 }
 
