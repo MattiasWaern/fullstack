@@ -189,7 +189,7 @@ export default function BookDetail() {
           </span>
         </div>
 
-        {/* Write a Review - Goodreads Style */}
+        {/* Write a Review  */}
         {isLoggedIn ? (
           <form onSubmit={submitReview} className="bg-white rounded border border-[#e8e4d9] p-4 mb-6">
             <div className="flex items-center gap-3 mb-4">
