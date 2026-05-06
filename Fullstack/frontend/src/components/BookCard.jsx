@@ -17,7 +17,7 @@ export default function BookCard({ book }) {
           alt={book.title}
           className="w-16 h-24 object-cover rounded-sm shadow-[2px_2px_4px_rgba(0,0,0,0.15)]"
         />
-        {/* Goodreads-style "currently reading" shelf indicator */}
+        {/* "currently reading" shelf indicator */}
         {book.currently_reading && (
           <div className="absolute -top-1 -left-1 w-3 h-3 bg-[#409D69] rounded-full border-2 border-white" />
         )}
@@ -26,7 +26,7 @@ export default function BookCard({ book }) {
       {/* Book Info */}
       <div className="flex flex-col justify-between flex-1 min-w-0">
         <div>
-          {/* Title - Goodreads uses serif-like font */}
+          {/* Title  */}
           <h3 className="font-['Georgia',_'Times_New_Roman',_serif'] font-bold text-[#382110] text-lg leading-tight group-hover:text-[#00635d] group-hover:underline transition-colors">
             {book.title}
           </h3>
@@ -36,7 +36,7 @@ export default function BookCard({ book }) {
             {book.author}
           </p>
 
-          {/* Rating Stars - Goodreads style */}
+          {/* Rating Stars  */}
           <div className="flex items-center gap-2 mt-1.5">
             <StarRating rating={Math.round(book.avg_rating || 0)} />
             <span className="text-xs text-[#767676]">
@@ -52,7 +52,7 @@ export default function BookCard({ book }) {
             )}
           </div>
 
-          {/* Genre Tags - Goodreads style */}
+          {/* Genre Tags  */}
           {book.genre && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               <span className="inline-block px-2.5 py-0.5 bg-[#f4f1ea] text-[#382110] text-xs rounded-full border border-[#d8d1c6] hover:bg-[#ede6d6] transition-colors">
@@ -61,7 +61,7 @@ export default function BookCard({ book }) {
             </div>
           )}
 
-          {/* Description - Goodreads snippet style */}
+          {/* Description  */}
           {book.description && (
             <p className="text-xs text-[#555] mt-2 line-clamp-2 leading-relaxed italic">
               {book.description}
@@ -69,7 +69,7 @@ export default function BookCard({ book }) {
           )}
         </div>
 
-        {/* Bottom Row - Goodreads metadata style */}
+        {/* Bottom Row */}
         <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[#f0ece3]">
           {/* Reading progress bar (if available) */}
           {book.reading_progress !== undefined && (
