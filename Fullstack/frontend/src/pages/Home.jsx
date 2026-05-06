@@ -78,6 +78,52 @@ export default function Home(){
 
         </div>
 
+        {/* Sidebar */}
+        <div className="w-64 flex-shrink-0 hidden lg:block">
+          <div className="bg-white rounded-xl shadow p-5 border border-gray-100 mb-4">
+            <h3 className="font-semibold text-[#382110] mb-3">📊 Statistik</h3>
+            <div className="flex flex-col gap-2 text-sm text-gray-600">
+              <div className="flex justify-between">
+                <span>Antal böcker</span>
+                <span className="font-medium text-[#382110]">{books.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Recensioner</span>
+                <span className="font-medium text-[#382110]">
+                  {books.reduce((sum, b) => sum + (b.review_count || 0), 0)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-5 border border-gray-100">
+            <h3 className="font-semibold text-[#382110] mb-3">⭐ Högst betyg</h3>
+            <div className="flex flex-col gap-3">
+              {[...books]
+                .filter(b => b.avg_rating)
+                .sort((a, b) => b.avg_rating - a.avg_rating)
+                .slice(0, 3)
+                .map(book => (
+                  <div key={book.id} className="flex items-center gap-2">
+                    <img
+                      src={book.cover_url || 'https://via.placeholder.com/32x48?text=Bok'}
+                      alt={book.title}
+                      className="w-8 h-12 object-cover rounded"
+                      onError={e => e.target.src = 'https://via.placeholder.com/32x48?text=Bok'}
+                    />
+                    <div>
+                      <p className="text-xs font-medium text-[#382110] leading-tight">{book.title}</p>
+                      <p className="text-xs text-[#e8871a]">{'★'.repeat(Math.round(book.avg_rating))}</p>
+                    </div>
+                  </div>
+                ))}
+              {books.filter(b => b.avg_rating).length === 0 && (
+                <p className="text-xs text-gray-400">Inga betyg än</p>
+              )}
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
