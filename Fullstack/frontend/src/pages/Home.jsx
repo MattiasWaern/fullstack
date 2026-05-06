@@ -39,8 +39,21 @@ export default function Home(){
           )}
         </div>
 
+        {/* Add book panel */}
+        {showAdd &&(
+          <div className="max-w-2xl mx-auto mt-6 px-4">
+            <div className="bg-white rounded-xl shadow p-6 border border-[#d4c5a9]">
+              <h2 className="font-semibold text-[#382110] text-lg mb-4">Sök och lägg till böcker</h2>
+              <BookSearch onSelect={addBook}></BookSearch>
+             </div> 
+          </div>  
+        )}
 
-        
+        {/* Main content */} 
+        <div className="max-w-6xl mx-auto px-4 py-8 flex gap-8">
+          
+        </div>
+
       </div>
   );
 }
