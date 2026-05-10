@@ -17,6 +17,39 @@ router.get('/', (req, res) => {
     res.json(books);
 });
 
+router.get('/search', async (req, res) => {
+  const { q, type } = req.query;
+  if (!q) return res.status(400).json({ error: 'Sökterm saknas' });
+
+  const prefix = type === 'author' ? 'inauthor:' : 'intitle:';
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${prefix}${encodeURIComponent(q)}&maxResults=12&orderBy=relevance&printType=books&key=${process.env.GOOGLE_BOOKS_API_KEY}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const books = (data.items || []).map(item => {
+      const b = item.volumeInfo;
+      return {
+        id: item.id,
+        title: b.title || 'Okänd titel',
+        author: b.authors?.join(', ') || 'Okänd',
+        description: b.description || '',
+        genre: b.categories?.[0] || '',
+        cover_url: b.imageLinks?.thumbnail?.replace('http://', 'https://') || '',
+      };
+    }).filter(item =>
+      item.author !== 'Okänd' &&
+      item.cover_url !== '' &&
+      item.title.length < 80
+    );
+
+    res.json(books);
+  } catch (err) {
+    res.status(500).json({ error: 'Sökningen misslyckades' });
+  }
+});
+
 router.get('/:id', (req, res) => {
     const book = db.prepare(`
         SELECT books.*, users.username as created_by_username
