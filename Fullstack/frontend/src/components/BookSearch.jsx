@@ -23,17 +23,30 @@ async function search() {
       index === self.findIndex(t => t.id === item.id)
     );
 
-    const items = unique.map(item => {
-      const b = item.volumeInfo;
-      return {
-        id: item.id,
-        title: b.title || 'Okänd titel',
-        author: b.authors?.join(', ') || 'Okänd',
-        description: b.description || '',
-        genre: b.categories?.[0] || '',
-        cover_url: b.imageLinks?.thumbnail?.replace('http://', 'https://') || '',
-      };
-    });
+  const items = unique.map(item => {
+    const b = item.volumeInfo;
+    return {
+      id: item.id,
+      title: b.title || 'Okänd titel',
+      author: b.authors?.join(', ') || 'Okänd',
+      description: b.description || '',
+      genre: b.categories?.[0] || '',
+      cover_url: b.imageLinks?.thumbnail?.replace('http://', 'https://') || '',
+    };
+  }).sort((a, b) => {
+    const queryLower = query.toLowerCase();
+    // Författarträff först
+    const aAuthor = a.author.toLowerCase().includes(queryLower);
+    const bAuthor = b.author.toLowerCase().includes(queryLower);
+    if (aAuthor && !bAuthor) return -1;
+    if (!aAuthor && bAuthor) return 1;
+    // Sedan titelträff
+    const aTitle = a.title.toLowerCase().includes(queryLower);
+    const bTitle = b.title.toLowerCase().includes(queryLower);
+    if (aTitle && !bTitle) return -1;
+    if (!aTitle && bTitle) return 1;
+    return 0;
+  });
 
     setResults(items.slice(0, 8));
   } catch (error) {
