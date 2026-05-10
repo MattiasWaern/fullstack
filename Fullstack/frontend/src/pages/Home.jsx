@@ -126,7 +126,7 @@ export default function Home(){
             <div className="bg-white rounded-lg border border-[#d8d1c6] mb-4">
               <div className="p-4 border-b border-[#f0ece3]">
                 <h3 className="font-['Georgia',_'Times_New_Roman',_serif'] font-bold text-[#382110]">
-                  📊 Statistik
+                   Statistik
                 </h3>
               </div>
               <div className="p-4">
@@ -159,7 +159,7 @@ export default function Home(){
             <div className="bg-white rounded-lg border border-[#d8d1c6] mb-4">
               <div className="p-4 border-b border-[#f0ece3]">
                 <h3 className="font-['Georgia',_'Times_New_Roman',_serif'] font-bold text-[#382110]">
-                  ⭐ Högst betyg
+                   Högst betyg
                 </h3>
               </div>
               <div className="p-4">
@@ -212,7 +212,7 @@ export default function Home(){
             <div className="bg-white rounded-lg border border-[#d8d1c6]">
               <div className="p-4 border-b border-[#f0ece3]">
                 <h3 className="font-['Georgia',_'Times_New_Roman',_serif'] font-bold text-[#382110]">
-                  🏷️ Genrer
+                   Genrer
                 </h3>
               </div>
               <div className="p-4">
