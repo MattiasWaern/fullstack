@@ -5,15 +5,25 @@ export default function BookSearch({ onSelect }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  async function search() {
+async function search() {
   if (!query.trim()) return;
   setLoading(true);
   try {
-    const res = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&orderBy=relevance&printType=books`
+    const [titleRes, authorRes] = await Promise.all([
+      fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(query)}&maxResults=5&orderBy=relevance&printType=books`),
+      fetch(`https://www.googleapis.com/books/v1/volumes?q=inauthor:${encodeURIComponent(query)}&maxResults=5&orderBy=relevance&printType=books`)
+    ]);
+
+    const [titleData, authorData] = await Promise.all([titleRes.json(), authorRes.json()]);
+
+    const allItems = [...(titleData.items || []), ...(authorData.items || [])];
+
+    // Ta bort dubbletter
+    const unique = allItems.filter((item, index, self) =>
+      index === self.findIndex(t => t.id === item.id)
     );
-    const data = await res.json();
-    const items = (data.items || []).map(item => {
+
+    const items = unique.map(item => {
       const b = item.volumeInfo;
       return {
         id: item.id,
@@ -24,7 +34,8 @@ export default function BookSearch({ onSelect }) {
         cover_url: b.imageLinks?.thumbnail?.replace('http://', 'https://') || '',
       };
     });
-    setResults(items);
+
+    setResults(items.slice(0, 8));
   } catch (error) {
     console.error('Sökningen misslyckades:', error);
     setResults([]);
