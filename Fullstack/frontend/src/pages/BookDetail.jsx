@@ -2,10 +2,19 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from '../api';
 import StarRating from "../components/StarRating";
+import { useLocation } from "react-router-dom";
 
 export default function BookDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get('edit') === 'true') {
+    setIsEditing(true);
+  }
+}, [location]);
   
   // States
   const [book, setBook] = useState(null);
@@ -155,7 +164,7 @@ export default function BookDetail() {
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-400">Beskrivning</label>
                   <textarea 
-                    className="w-full border border-[#d8d1c6] p-2 h-32 rounded resize-none" 
+                    className="w-full border border-[#d8d1c6] p-2 h-32 rounded resize-both" 
                     value={editData.description || ''} 
                     onChange={e => setEditData({...editData, description: e.target.value})} 
                   />
