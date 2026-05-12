@@ -78,6 +78,38 @@ router.post('/', requireAuth, (req, res) => {
     }
 });
 
+// Uppdatera en bok
+router.put('/:id', requireAuth, (req, res) => {
+    const { 
+        title, author, description, cover_url, 
+        genre, page_count, release_year, publisher, isbn 
+    } = req.body;
+
+    const book = db.prepare('SELECT * FROM books WHERE id = ?').get(req.params.id);
+    
+    if (!book) return res.status(404).json({ error: 'Boken hittades inte' });
+    if (book.created_by !== req.user.id) {
+        return res.status(403).json({ error: 'Du kan bara redigera dina egna böcker' });
+    }
+
+    try {
+        db.prepare(`
+            UPDATE books SET 
+                title = ?, author = ?, description = ?, cover_url = ?, 
+                genre = ?, page_count = ?, release_year = ?, publisher = ?, isbn = ?
+            WHERE id = ?
+        `).run(
+            title, author, description, cover_url, 
+            genre, page_count || null, release_year || null, 
+            publisher || null, isbn || null, req.params.id
+        );
+
+        res.json({ message: 'Boken uppdaterad' });
+    } catch (err) {
+        res.status(500).json({ error: 'Kunde inte uppdatera boken' });
+    }
+});
+
 router.delete('/:id', requireAuth, (req, res) => {
     const book = db.prepare('SELECT * FROM books WHERE id = ?').get(req.params.id);
     if(!book) return res.status(404).json({error: 'Boken hittade inte'});
