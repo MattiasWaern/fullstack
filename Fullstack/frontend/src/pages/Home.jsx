@@ -137,19 +137,63 @@ export default function Home() {
              </div>
           </div>
 
-          {/* Top Rated Card */}
-          <div className="bg-white rounded-lg border border-[#d8d1c6] mb-4 p-4">
-            <h3 className="font-['Georgia',_serif] font-bold text-[#382110] mb-3 border-b pb-2">Högst betyg</h3>
-            {topRated.map((book) => (
-              <Link key={book.id} to={`/books/${book.id}`} className="flex items-center gap-2 mb-3 group">
-                <img src={book.cover_url} className="w-8 h-12 object-cover rounded shadow-sm" alt="" />
-                <div className="min-w-0">
-                  <p className="text-xs font-bold truncate group-hover:text-[#00635d]">{book.title}</p>
-                  <p className="text-[10px] text-[#e8871a]">{'★'.repeat(Math.round(book.avg_rating))}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+{/* Top Rated Card */}
+<div className="bg-white rounded-lg border border-[#d8d1c6] mb-4 shadow-sm">
+  <div className="p-4 border-b border-[#f0ece3]">
+    <h3 className="font-['Georgia',_serif] font-bold text-[#382110]">
+      Högst betyg
+    </h3>
+  </div>
+  <div className="p-4">
+    {topRated.length > 0 ? (
+      <div className="space-y-4">
+        {topRated.map((book, index) => (
+          <Link
+            key={book.id}
+            to={`/books/${book.id}`}
+            className="flex items-center gap-3 group hover:bg-[#f9f8f4] p-2 rounded-md transition-all -mx-2"
+          >
+            {/* Omslag med Pokal-logik */}
+            <div className="relative flex-shrink-0">
+              {index === 0 && (
+                <span className="absolute -top-2 -right-2 w-6 h-6 bg-[#e8871a] rounded-full flex items-center justify-center text-white text-xs shadow-md z-10 animate-bounce-short">
+                  🏆
+                </span>
+              )}
+              <img
+                src={book.cover_url || 'https://via.placeholder.com/48x72?text=Bok'}
+                alt={book.title}
+                className="w-10 h-14 object-cover rounded-sm shadow-sm border border-[#e8e4d9]"
+              />
+            </div>
+
+            {/* Text-info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-[#382110] group-hover:text-[#00635d] transition-colors leading-tight truncate">
+                {book.title}
+              </p>
+              <p className="text-xs text-[#767676] truncate mb-1">
+                {book.author}
+              </p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[#e8871a] text-xs font-bold">
+                  {'★'.repeat(Math.round(book.avg_rating))}
+                </span>
+                <span className="text-[11px] font-bold text-[#767676]">
+                  {book.avg_rating ? book.avg_rating.toFixed(1) : "0.0"}
+                </span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm text-[#767676] text-center py-4 italic">
+        Inga betyg än
+      </p>
+    )}
+  </div>
+</div>
 
           {/* Genrer Card */}
           <div className="bg-white rounded-lg border border-[#d8d1c6] p-3">
