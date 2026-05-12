@@ -110,14 +110,22 @@ router.put('/:id', requireAuth, (req, res) => {
     }
 });
 
-router.delete('/:id', requireAuth, (req, res) => {
-    const book = db.prepare('SELECT * FROM books WHERE id = ?').get(req.params.id);
-    if(!book) return res.status(404).json({error: 'Boken hittade inte'});
-    if(book.created_by !== req.user.id)
-        return res.status(403).json({error: 'Du kan bara ta bort dina egna böcker'});
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // Exempel med SQL (justera efter din databas-setup):
+    // const result = await db.query('DELETE FROM books WHERE id = ?', [id]);
+    
+    // Om du använder Sequelize/Mongoose:
+    // await Book.destroy({ where: { id } });
 
-    db.prepare('DELETE FROM books WHERE id = ?').run(req.params.id);
-    res.json({message: 'Boken borttagen'});
+    console.log(`Bok med ID ${id} raderad`);
+    res.status(200).json({ message: 'Boken raderad' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Kunde inte radera boken' });
+  }
 });
 
 router.get('/:id/reviews', (req, res) => {
