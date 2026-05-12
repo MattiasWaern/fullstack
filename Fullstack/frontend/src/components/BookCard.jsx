@@ -88,7 +88,7 @@ const handleDeleteClick = async (e) => {
 
           {book.genre && (
             <div className="flex flex-wrap gap-1 mt-2">
-              {book.genre.replace(/([a-z])([A-Z])/g, '$1 $2').split(/[, ]+/).filter(Boolean).slice(0, 2).map((g, i) => (
+              {book.genre.replace(/([a-z])([A-Z])/g, '$1 $2 $3').split(/[, ]+/).filter(Boolean).slice(0, 3).map((g, i) => (
                 <span key={i} className="bg-[#f4f1ea] text-[#382110] text-[10px] font-bold px-2 py-1 rounded border border-[#d8d1c6]">
                   {g}
                 </span>
