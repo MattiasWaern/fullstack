@@ -208,32 +208,37 @@ export default function Home(){
               </div>
             </div>
 
-            {/* Genres Card */}
-            <div className="bg-white rounded-lg border border-[#d8d1c6]">
-              <div className="p-4 border-b border-[#f0ece3]">
-                <h3 className="font-['Georgia',_'Times_New_Roman',_serif'] font-bold text-[#382110]">
-                   Genrer
-                </h3>
-              </div>
-              <div className="p-4">
-                <div className="flex flex-wrap gap-2">
-                  {[...new Set(books.map(b => b.genre).filter(Boolean))]
-                    .slice(0, 8)
-                    .map(genre => (
-                      <span 
-                        key={genre}
-                        className="text-xs px-3 py-1 bg-[#f4f1ea] text-[#382110] rounded-full border border-[#d8d1c6] cursor-pointer hover:bg-[#ede6d6] transition-colors"
-                        onClick={() => setFilter(genre)}
-                      >
-                        {genre}
-                      </span>
-                    ))}
-                  {books.filter(b => b.genre).length === 0 && (
-                    <p className="text-sm text-[#767676]">Inga genrer än</p>
-                  )}
-                </div>
-              </div>
-            </div>
+      <div className="bg-white rounded-lg border border-[#d8d1c6] mt-4">
+  <div className="p-3 border-b border-[#f0ece3]">
+    <h3 className="font-['Georgia',_serif] text-xs font-bold text-[#382110] uppercase tracking-wider">
+      Mina Genrer
+    </h3>
+  </div>
+  
+  <div className="p-3 flex flex-wrap gap-2">
+    {books.length > 0 ? (
+      // Logik för att hämta ALLA genrer från ALLA böcker
+      [...new Set(
+        books
+          .map(book => book.genre)
+          .filter(Boolean)
+          .flatMap(g => g.replace(/([a-z])([A-Z])/g, '$1 $2').split(/[, ]+/))
+          .filter(Boolean)
+      )]
+      .slice(0, 10) // Visa de 10 första unika genrerna
+      .map((genreName, i) => (
+        <span 
+          key={i} 
+          className="bg-[#f4f1ea] text-[#382110] text-[10px] font-bold px-2 py-1 rounded border border-[#d8d1c6] uppercase tracking-wide"
+        >
+          {genreName}
+        </span>
+      ))
+    ) : (
+      <p className="text-[10px] text-gray-400 italic">Inga genrer hittades</p>
+    )}
+  </div>
+</div>
           </div>
         </div>
 

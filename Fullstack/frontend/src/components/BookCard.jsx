@@ -53,13 +53,26 @@ export default function BookCard({ book }) {
           </div>
 
           {/* Genre Tags  */}
-          {book.genre && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              <span className="inline-block px-2.5 py-0.5 bg-[#f4f1ea] text-[#382110] text-xs rounded-full border border-[#d8d1c6] hover:bg-[#ede6d6] transition-colors">
-                {book.genre}
-              </span>
-            </div>
-          )}
+       {book.genre && (
+  <div className="flex flex-wrap gap-1 mt-2">
+    {book.genre
+      .split(/[, ]+/) // Delar upp vid kommatecken eller mellanslag
+      .filter(Boolean) // Tar bort tomma element
+      .slice(0, 3)    // Visar bara de 3 första för att inte fylla hela kortet
+      .map((g, i) => (
+        <span 
+          key={i} 
+          className="bg-[#f4f1ea] text-[#382110] text-[10px] font-bold px-2 py-0.5 rounded border border-[#d8d1c6] uppercase tracking-wide"
+        >
+          {g}
+        </span>
+      ))
+    }
+    {book.genre.split(/[, ]+/).filter(Boolean).length > 3 && (
+      <span className="text-[10px] text-gray-400 self-center">+fler</span>
+    )}
+  </div>
+)}
 
           {/* Description  */}
           {book.description && (
