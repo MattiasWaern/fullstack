@@ -17,6 +17,10 @@ db.exec(`
     description TEXT,
     cover_url TEXT,
     genre TEXT,
+    page_count INTEGER,      -- Ny!
+    release_year INTEGER,    -- Ny!
+    publisher TEXT,          -- Ny!
+    isbn TEXT UNIQUE,        -- Ny!
     created_by INTEGER REFERENCES users(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -26,22 +30,24 @@ db.exec(`
     book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id),
     rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
-    text TEXT NOT NULL,
+    comment TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
-// Lägg till nya kolumner om de saknas (migration)
+// Hjälpfunktion för migrering
 function addColumnIfMissing(table, column, type) {
   const columns = db.pragma(`table_info(${table})`).map(c => c.name);
   if (!columns.includes(column)) {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-    console.log(` Lade till kolumn: ${table}.${column}`);
+    console.log(`✅ Lade till kolumn: ${table}.${column}`);
   }
 }
 
-addColumnIfMissing('books', 'cover_url', 'TEXT');
-addColumnIfMissing('books', 'description', 'TEXT');
-addColumnIfMissing('books', 'genre', 'TEXT');
+// Kör migreringar för befintlig databas
+addColumnIfMissing('books', 'page_count', 'INTEGER');
+addColumnIfMissing('books', 'release_year', 'INTEGER');
+addColumnIfMissing('books', 'publisher', 'TEXT');
+addColumnIfMissing('books', 'isbn', 'TEXT');
 
 module.exports = db;
