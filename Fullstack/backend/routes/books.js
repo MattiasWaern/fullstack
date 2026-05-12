@@ -28,21 +28,48 @@ router.get('/search', async (req, res) => {
     const response = await fetch(url);
     const data = await response.json();
 
-    const books = (data.docs || []).map(book => ({
-      id: book.key,
-      title: book.title || 'Okänd titel',
-      author: book.author_name?.join(', ') || 'Okänd',
-      description: book.first_sentence?.[0] || '',
-      genre: book.subject?.slice(0, 3).join(', ') || '',
-      cover_url: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : '',
-    })).filter(item =>
-      item.author !== 'Okänd' &&
-      item.cover_url !== '' &&
-      item.title.length < 80
-    );
+    // Ta BORT filtreringen - visa ALLA böcker från OpenLibrary
+    // const filtered = (data.docs || []).filter(book =>
+    //   book.author_name &&
+    //   book.cover_i &&
+    //   book.title.length < 80
+    // ).slice(0, 8);
+
+    // Använd istället alla böcker direkt från OpenLibrary
+    const booksToProcess = (data.docs || []).slice(0, 12);
+
+    // Hämta detaljinfo för varje bok parallellt
+    const books = await Promise.all(booksToProcess.map(async book => {
+      let description = book.first_sentence?.[0] || '';
+
+      // Hämta beskrivning från bokens egen sida om den saknas
+      if (!description && book.key) {
+        try {
+          const detailRes = await fetch(`https://openlibrary.org${book.key}.json`);
+          const detail = await detailRes.json();
+          description = typeof detail.description === 'string'
+            ? detail.description
+            : detail.description?.value || '';
+          // Trunkera om den är för lång
+          if (description.length > 400) description = description.slice(0, 400) + '...';
+        } catch {
+          description = '';
+        }
+      }
+
+      return {
+        id: book.key,
+        title: book.title || 'Okänd titel',
+        author: book.author_name?.join(', ') || 'Okänd författare',
+        description: description || '',
+        genre: book.subject?.slice(0, 3).join(', ') || '',
+        cover_url: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : null,
+      };
+    }));
 
     res.json(books);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Sökningen misslyckades' });
   }
 });

@@ -12,19 +12,9 @@ async function search() {
   setLoading(true);
   try {
     const { data } = await api.get(`/books/search?q=${encodeURIComponent(query)}&type=${searchType}`);
-    const sorted = data.sort((a, b) => {
-      const queryLower = query.toLowerCase();
-      const aMatch = searchType === 'author'
-        ? a.author.toLowerCase().includes(queryLower)
-        : a.title.toLowerCase().includes(queryLower);
-      const bMatch = searchType === 'author'
-        ? b.author.toLowerCase().includes(queryLower)
-        : b.title.toLowerCase().includes(queryLower);
-      if (aMatch && !bMatch) return -1;
-      if (!aMatch && bMatch) return 1;
-      return 0;
-    });
-    setResults(sorted.slice(0, 8));
+    // Ta bort sorteringen - visa bara som de kommer från API:t
+    // OpenLibrary har redan sorterat efter relevans
+    setResults(data.slice(0, 8));
   } catch (err) {
     console.error('Sökningen misslyckades:', err);
     setResults([]);
