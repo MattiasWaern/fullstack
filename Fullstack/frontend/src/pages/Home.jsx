@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from '../api';
 import BookCard from '../components/BookCard';
 import BookSearch from '../components/BookSearch';
+import WantToReadSidebar from '../components/WantToReadSidebar';
 
 export default function Home() {
   const [books, setBooks] = useState([]);
@@ -80,8 +81,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* Main content */}
-      <div className="max-w-6xl mx-auto px-4 py-8 flex gap-8">
+      {/* MAIN LAYOUT WITH THREE COLUMNS */}
+      <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
+        
+        {/* LEFT COLUMN - Personal Shelf */}
+        <div className="w-full lg:w-48 flex-shrink-0">
+          <WantToReadSidebar />
+        </div>
+
+        {/* MIDDLE COLUMN - Main Feed */}
         <div className="flex-1">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-['Georgia',_serif] text-2xl font-bold text-[#382110]">
@@ -96,7 +104,7 @@ export default function Home() {
                 placeholder="Filtrera böcker..."
                 value={filter}
                 onChange={e => setFilter(e.target.value)}
-                className="border border-[#d8d1c6] rounded-sm px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#409D69] bg-white w-64"
+                className="border border-[#d8d1c6] rounded-sm px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#409D69] bg-white w-48 md:w-64"
               />
             </div>
           </div>
@@ -108,7 +116,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* BOOK GRID - Här skickas onDelete med! */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filtered.map(book => (
               <BookCard 
@@ -120,10 +127,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="w-72 flex-shrink-0 hidden lg:block">
+        {/* RIGHT COLUMN - Stats & Top Rated */}
+        <div className="w-full lg:w-72 flex-shrink-0 space-y-4">
           {/* Statistik Card */}
-          <div className="bg-white rounded-lg border border-[#d8d1c6] mb-4 p-4">
+          <div className="bg-white rounded-lg border border-[#d8d1c6] p-4 shadow-sm">
              <h3 className="font-['Georgia',_serif] font-bold text-[#382110] mb-3 border-b pb-2">Statistik</h3>
              <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -137,66 +144,57 @@ export default function Home() {
              </div>
           </div>
 
-{/* Top Rated Card */}
-<div className="bg-white rounded-lg border border-[#d8d1c6] mb-4 shadow-sm">
-  <div className="p-4 border-b border-[#f0ece3]">
-    <h3 className="font-['Georgia',_serif] font-bold text-[#382110]">
-      Högst betyg
-    </h3>
-  </div>
-  <div className="p-4">
-    {topRated.length > 0 ? (
-      <div className="space-y-4">
-        {topRated.map((book, index) => (
-          <Link
-            key={book.id}
-            to={`/books/${book.id}`}
-            className="flex items-center gap-3 group hover:bg-[#f9f8f4] p-2 rounded-md transition-all -mx-2"
-          >
-            {/* Omslag med Pokal-logik */}
-            <div className="relative flex-shrink-0">
-              {index === 0 && (
-                <span className="absolute -top-2 -right-2 w-6 h-6 bg-[#e8871a] rounded-full flex items-center justify-center text-white text-xs shadow-md z-10 animate-bounce-short">
-                  🏆
-                </span>
+          {/* Top Rated Card */}
+          <div className="bg-white rounded-lg border border-[#d8d1c6] shadow-sm">
+            <div className="p-4 border-b border-[#f0ece3]">
+              <h3 className="font-['Georgia',_serif] font-bold text-[#382110]">Högst betyg</h3>
+            </div>
+            <div className="p-4">
+              {topRated.length > 0 ? (
+                <div className="space-y-4">
+                  {topRated.map((book, index) => (
+                    <Link
+                      key={book.id}
+                      to={`/books/${book.id}`}
+                      className="flex items-center gap-3 group hover:bg-[#f9f8f4] p-2 rounded-md transition-all -mx-2"
+                    >
+                      <div className="relative flex-shrink-0">
+                        {index === 0 && (
+                          <span className="absolute -top-2 -right-2 w-6 h-6 bg-[#e8871a] rounded-full flex items-center justify-center text-white text-xs shadow-md z-10">
+                            🏆
+                          </span>
+                        )}
+                        <img
+                          src={book.cover_url || 'https://via.placeholder.com/48x72?text=Bok'}
+                          alt={book.title}
+                          className="w-10 h-14 object-cover rounded-sm shadow-sm border border-[#e8e4d9]"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-[#382110] group-hover:text-[#00635d] transition-colors leading-tight truncate">
+                          {book.title}
+                        </p>
+                        <p className="text-xs text-[#767676] truncate mb-1">{book.author}</p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[#e8871a] text-xs font-bold">
+                            {'★'.repeat(Math.round(book.avg_rating))}
+                          </span>
+                          <span className="text-[11px] font-bold text-[#767676]">
+                            {book.avg_rating ? book.avg_rating.toFixed(1) : "0.0"}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[#767676] text-center py-4 italic">Inga betyg än</p>
               )}
-              <img
-                src={book.cover_url || 'https://via.placeholder.com/48x72?text=Bok'}
-                alt={book.title}
-                className="w-10 h-14 object-cover rounded-sm shadow-sm border border-[#e8e4d9]"
-              />
             </div>
-
-            {/* Text-info */}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-[#382110] group-hover:text-[#00635d] transition-colors leading-tight truncate">
-                {book.title}
-              </p>
-              <p className="text-xs text-[#767676] truncate mb-1">
-                {book.author}
-              </p>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[#e8871a] text-xs font-bold">
-                  {'★'.repeat(Math.round(book.avg_rating))}
-                </span>
-                <span className="text-[11px] font-bold text-[#767676]">
-                  {book.avg_rating ? book.avg_rating.toFixed(1) : "0.0"}
-                </span>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-    ) : (
-      <p className="text-sm text-[#767676] text-center py-4 italic">
-        Inga betyg än
-      </p>
-    )}
-  </div>
-</div>
+          </div>
 
           {/* Genrer Card */}
-          <div className="bg-white rounded-lg border border-[#d8d1c6] p-3">
+          <div className="bg-white rounded-lg border border-[#d8d1c6] p-3 shadow-sm">
             <h3 className="font-['Georgia',_serif] text-xs font-bold text-[#382110] uppercase tracking-wider mb-3">Mina Genrer</h3>
             <div className="flex flex-wrap gap-2">
               {[...new Set(books.map(b => b.genre).filter(Boolean).flatMap(g => g.split(/[, ]+/)))].slice(0, 10).map((g, i) => (
