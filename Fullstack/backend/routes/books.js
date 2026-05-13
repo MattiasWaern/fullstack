@@ -78,6 +78,23 @@ router.post('/', requireAuth, (req, res) => {
     }
 });
 
+// Lägg till en bok i "Want to read"
+router.post('/:id/want-to-read', requireAuth, (req, res) => {
+    try{
+        db.prepare(`
+                INSERT OR IGNORE INTO want_to_read (user_id, book_id)
+                VALUES (?, ? )
+            `).run(req.user.id, req.params.id);
+
+            res.json({message: 'Tillagd i din läslista'});
+    } catch(err){
+        res.status(500).json({error: 'Kunde inte spara'});
+    }
+});
+
+
+
+
 // Uppdatera en bok
 router.put('/:id', requireAuth, (req, res) => {
     const { 
