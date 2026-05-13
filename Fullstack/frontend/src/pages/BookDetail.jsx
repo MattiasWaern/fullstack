@@ -21,7 +21,7 @@ export default function BookDetail() {
   const [reviews, setReviews] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
-  const [IsWantToRead, setIsWantToRead] = useState(false);
+  const [isWantToRead, setIsWantToRead] = useState(false);
   
   // Form states
   const [rating, setRating] = useState(3);
@@ -45,7 +45,7 @@ export default function BookDetail() {
     e.stopPropagation();
 
     try{
-      if (IsWantToRead) {
+      if (isWantToRead) {
         await api.delete(`/books/${book.id}/want-to-read`);
         setIsWantToRead(false);
       } else {
@@ -128,8 +128,8 @@ export default function BookDetail() {
                   onClick={toggleWantToRead}
                   className={`px-4 py-2 rounded-sm text-sm font-medium transition-colors ${
                       isWantToRead 
-                      ? 'bg-[#f4f1ea] text-[#382110] border border-[#d8d1c6]' // "Checkmark"-stil
-                      : 'bg-[#409D69] text-white hover:bg-[#358558]'         // Standard-stil
+                      ? 'bg-[#f4f1ea] text-[#382110] border border-[#d8d1c6]' 
+                      : 'bg-[#409D69] text-white hover:bg-[#358558]'         
                   }`}
               >
                   {isWantToRead ? '✓ Want to Read' : 'Want to Read'}
