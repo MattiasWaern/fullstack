@@ -32,12 +32,28 @@ export default function BookDetail() {
   const username = localStorage.getItem('username');
 
   useEffect(() => {
-    api.get(`/books/${id}`).then(r => {
-      setBook(r.data);
-      setEditData(r.data); // Förbered redigeringsdata
-    });
-    api.get(`/books/${id}/reviews`).then(r => setReviews(r.data));
-  }, [id]);
+      // Hämta bokdetaljer
+      api.get(`/books/${id}`)
+          .then(r => {
+              setBook(r.data);
+              setEditData(r.data);
+          })
+          .catch(err => console.error("Fel vid hämtning av bok:", err));
+
+      //  Hämta recensioner
+      api.get(`/books/${id}/reviews`)
+          .then(r => setReviews(r.data))
+          .catch(err => console.error("Fel vid hämtning av recensioner:", err));
+
+      //  Hämta "Want to Read"-status (bara om användaren är inloggad)
+      if (isLoggedIn) {
+          api.get(`/books/${id}/want-to-read-status`)
+              .then(r => {
+                  setIsWantToRead(r.data.isWantToRead);
+              })
+              .catch(err => console.error("Kunde inte hämta lässtatus:", err));
+      }
+  }, [id, isLoggedIn]); 
 
 
   const toggleWantToRead = async (e) => {

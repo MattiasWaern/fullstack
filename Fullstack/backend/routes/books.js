@@ -105,7 +105,21 @@ router.delete('/:id/want-to-read', requireAuth, (req, res) => {
     }
 });
 
+// Kolla om boken finns i användarens läslista
+router.get('/:id/want-to-read-status', requireAuth, (req, res) => {
+    try {
+        const row = db.prepare(`
+            SELECT 1 FROM want_to_read 
+            WHERE user_id = ? AND book_id = ?
+        `).get(req.user.id, req.params.id);
 
+        // Om row existerar betyder det att boken är sparad
+        res.json({ isWantToRead: !!row });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Kunde inte hämta status' });
+    }
+});
 
 
 // Uppdatera en bok
