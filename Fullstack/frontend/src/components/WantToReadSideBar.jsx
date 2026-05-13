@@ -27,9 +27,9 @@ export default function WantToReadSidebar() {
 <img
   src={book.cover_url || 'https://via.placeholder.com/200x300'}
   alt={book.title}
-  style={{ width: '100%', height: '280px', width: '200px', objectFit: 'cover' }}
+  style={{ width: '100%', height: '220px', objectFit: 'cover' }}
   className="rounded shadow-md group-hover:opacity-90 transition-opacity"
-/>         <p className="text-xl font-bold text-[#382110] group-hover:text-[#409D69] leading-snug">
+/>       <p className="text-xl font-bold text-[#382110] group-hover:text-[#409D69] leading-snug">
               {book.title}
             </p>
             <p className="text-xs text-[#767676] italic">av {book.author}</p>

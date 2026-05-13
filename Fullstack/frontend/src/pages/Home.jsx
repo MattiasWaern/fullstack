@@ -187,7 +187,7 @@ export default function Home() {
       </div>
 
       <footer className="bg-[#f4f1ea] border-t border-[#d8d1c6] mt-16 py-6 text-center text-sm text-[#767676]">
-        © 2026 MyReads — Byggd med kärlek för böcker 📚
+        © 2026 MyReads, Byggd för böcker 📚 xd
       </footer>
     </div>
   );
