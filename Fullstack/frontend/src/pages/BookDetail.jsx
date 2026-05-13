@@ -21,6 +21,7 @@ export default function BookDetail() {
   const [reviews, setReviews] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
+  const [isWantToRead, setIsWantToRead] = useState(false);
   
   // Form states
   const [rating, setRating] = useState(3);
@@ -31,12 +32,46 @@ export default function BookDetail() {
   const username = localStorage.getItem('username');
 
   useEffect(() => {
-    api.get(`/books/${id}`).then(r => {
-      setBook(r.data);
-      setEditData(r.data); // Förbered redigeringsdata
-    });
-    api.get(`/books/${id}/reviews`).then(r => setReviews(r.data));
-  }, [id]);
+      // Hämta bokdetaljer
+      api.get(`/books/${id}`)
+          .then(r => {
+              setBook(r.data);
+              setEditData(r.data);
+          })
+          .catch(err => console.error("Fel vid hämtning av bok:", err));
+
+      //  Hämta recensioner
+      api.get(`/books/${id}/reviews`)
+          .then(r => setReviews(r.data))
+          .catch(err => console.error("Fel vid hämtning av recensioner:", err));
+
+      //  Hämta "Want to Read"-status (bara om användaren är inloggad)
+      if (isLoggedIn) {
+          api.get(`/books/${id}/want-to-read-status`)
+              .then(r => {
+                  setIsWantToRead(r.data.isWantToRead);
+              })
+              .catch(err => console.error("Kunde inte hämta lässtatus:", err));
+      }
+  }, [id, isLoggedIn]); 
+
+
+  const toggleWantToRead = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try{
+      if (isWantToRead) {
+        await api.delete(`/books/${book.id}/want-to-read`);
+        setIsWantToRead(false);
+      } else {
+        await api.post(`/books/${book.id}/want-to-read`);
+        setIsWantToRead(true);
+      }
+    } catch(err){
+      console.error("Kunde inte uppdatera läslistan")
+    }
+  } 
 
   // Funktion för att spara uppdateringar
   async function handleUpdate(e) {
@@ -105,8 +140,15 @@ export default function BookDetail() {
             />
             
             <div className="mt-4 flex flex-col gap-2">
-              <button className="w-full bg-[#409D69] text-white text-sm font-bold py-2 rounded shadow-sm hover:bg-[#358558]">
-                Vill läsa
+              <button 
+                  onClick={toggleWantToRead}
+                  className={`px-4 py-2 rounded-sm text-sm font-medium transition-colors ${
+                      isWantToRead 
+                      ? 'bg-[#f4f1ea] text-[#382110] border border-[#d8d1c6]' 
+                      : 'bg-[#409D69] text-white hover:bg-[#358558]'         
+                  }`}
+              >
+                  {isWantToRead ? '✓ Want to Read' : 'Want to Read'}
               </button>
 
               {/* KNAPPARNA VID TA BORT */}
@@ -234,12 +276,11 @@ export default function BookDetail() {
         </div>
       </div>
 
-      {/* RECENSIONER (Samma som förut) */}
+      {/* RECENSIONER */}
       <div className="bg-[#fdfbf7] rounded-lg border border-[#d8d1c6] p-6 shadow-sm">
         <h2 className="font-['Georgia',_serif] text-xl font-bold text-[#382110] mb-6">
           Community-recensioner
         </h2>
-        {/* ... Resten av koden för reviews ... */}
         {isLoggedIn ? (
           <form onSubmit={submitReview} className="bg-white border border-[#e8e4d9] p-5 rounded mb-8">
             <div className="mb-4">
