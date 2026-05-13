@@ -92,6 +92,19 @@ router.post('/:id/want-to-read', requireAuth, (req, res) => {
     }
 });
 
+// Ta bort från "Want to read"
+router.delete('/:id/want-to-read', requireAuth, (req, res) => {
+    try{
+        db.prepare(`
+                DELETE FROM want_to_read WHERE user_id = ? AND book_id = ?
+            `).run(req.user.id, req.params.id);
+
+            res.json({message: 'Borttagen från din läslista'});
+    } catch(err){
+        res.status(500).json({error: 'Kunde inte ta bort'});
+    }
+});
+
 
 
 
