@@ -124,8 +124,15 @@ export default function BookDetail() {
             />
             
             <div className="mt-4 flex flex-col gap-2">
-              <button className="w-full bg-[#409D69] text-white text-sm font-bold py-2 rounded shadow-sm hover:bg-[#358558]">
-                Vill läsa
+              <button 
+                  onClick={toggleWantToRead}
+                  className={`px-4 py-2 rounded-sm text-sm font-medium transition-colors ${
+                      isWantToRead 
+                      ? 'bg-[#f4f1ea] text-[#382110] border border-[#d8d1c6]' // "Checkmark"-stil
+                      : 'bg-[#409D69] text-white hover:bg-[#358558]'         // Standard-stil
+                  }`}
+              >
+                  {isWantToRead ? '✓ Want to Read' : 'Want to Read'}
               </button>
 
               {/* KNAPPARNA VID TA BORT */}
