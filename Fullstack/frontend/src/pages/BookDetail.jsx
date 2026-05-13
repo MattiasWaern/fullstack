@@ -21,6 +21,7 @@ export default function BookDetail() {
   const [reviews, setReviews] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
+  const [IsWantToRead, setIsWantToRead] = useState(false);
   
   // Form states
   const [rating, setRating] = useState(3);
@@ -37,6 +38,24 @@ export default function BookDetail() {
     });
     api.get(`/books/${id}/reviews`).then(r => setReviews(r.data));
   }, [id]);
+
+
+  const toggleWantToRead = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try{
+      if (IsWantToRead) {
+        await api.delete(`/books/${book.id}/want-to-read`);
+        setIsWantToRead(false);
+      } else {
+        await api.post(`/books/${book.id}/want-to-read`);
+        setIsWantToRead(true);
+      }
+    } catch(err){
+      console.error("Kunde inte uppdatera läslistan")
+    }
+  } 
 
   // Funktion för att spara uppdateringar
   async function handleUpdate(e) {
@@ -234,12 +253,11 @@ export default function BookDetail() {
         </div>
       </div>
 
-      {/* RECENSIONER (Samma som förut) */}
+      {/* RECENSIONER */}
       <div className="bg-[#fdfbf7] rounded-lg border border-[#d8d1c6] p-6 shadow-sm">
         <h2 className="font-['Georgia',_serif] text-xl font-bold text-[#382110] mb-6">
           Community-recensioner
         </h2>
-        {/* ... Resten av koden för reviews ... */}
         {isLoggedIn ? (
           <form onSubmit={submitReview} className="bg-white border border-[#e8e4d9] p-5 rounded mb-8">
             <div className="mb-4">
