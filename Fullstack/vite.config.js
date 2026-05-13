@@ -9,5 +9,10 @@ export default defineConfig({
     alias: {
       '/src': '/frontend/src'
     }
+  },
+  server: {
+    watch: {
+      usePolling: true
+    }
   }
 })
