@@ -2,8 +2,6 @@ const router = require('express').Router();
 const db = require('../database');
 const requireAuth = require('../middleware/auth');
 
-// --- 1. STATISKA RUTTER (Inga parametrar som :id) ---
-
 // Hämta alla böcker (med betyg och statistik)
 router.get('/', (req, res) => {
     const books = db.prepare(`
@@ -32,7 +30,7 @@ router.get('/search', (req, res) => {
     res.json(books);
 });
 
-// HÄMTA MIN LÄSLISTA (Måste ligga före /:id)
+// HÄMTA MIN LÄSLISTA 
 router.get('/my/want-to-read', requireAuth, (req, res) => {
     try {
         const books = db.prepare(`
@@ -49,8 +47,6 @@ router.get('/my/want-to-read', requireAuth, (req, res) => {
     }
 });
 
-
-// --- 2. DYNAMISKA RUTTER (Använder :id) ---
 
 // Hämta specifik bok
 router.get('/:id', (req, res) => {
