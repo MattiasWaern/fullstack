@@ -17,8 +17,6 @@ const handleDeleteClick = async (e) => {
 
   if (window.confirm(`Är du säker på att du vill ta bort "${book.title}"?`)) {
     try {
-      // Här skickas nu anropet till: [DIN_BASE_URL]/books/[ID]
-      // Vilket i din setup blir: http://localhost:3001/api/books/[ID]
       const response = await api.delete(`/books/${book.id}`);
 
       if (response.status === 200 || response.status === 204) {
