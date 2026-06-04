@@ -192,7 +192,7 @@ export default function Profile() {
                   <img
                     src={book.cover_url || 'https://via.placeholder.com/150x225?text=Ingen+bild'}
                     alt={book.title}
-                    className="w-full h-40 object-cover rounded shadow-sm group-hover:opacity-90 transition-opacity"
+                    className="w-full h-full object-cover rounded shadow-sm group-hover:opacity-90 transition-opacity"
                   /> 
                   <div>
                     <p className="font-bold text-[#382110] text-sm line-clamp-1 group-hover:text-[#409D69]">
