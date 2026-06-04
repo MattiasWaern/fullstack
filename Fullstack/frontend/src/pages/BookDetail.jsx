@@ -28,11 +28,23 @@ export default function BookDetail() {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
 
+  // States för redigering av recensioner
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [editReviewText, setEditReviewText] = useState("");
+  const [editReviewRating, setEditReviewRating] = useState(3);
+
   const isLoggedIn = !!localStorage.getItem("token");
   const username = localStorage.getItem("username");
 
+  // Funktion för att hämta om recensioner separat vid uppdatering
+  const fetchReviews = () => {
+    api
+      .get(`/books/${id}/reviews`)
+      .then((r) => setReviews(r.data))
+      .catch((err) => console.error("Fel vid hämtning av recensioner:", err));
+  };
+
   useEffect(() => {
-    // Hämta bokdetaljer
     api
       .get(`/books/${id}`)
       .then((r) => {
@@ -41,13 +53,8 @@ export default function BookDetail() {
       })
       .catch((err) => console.error("Fel vid hämtning av bok:", err));
 
-    //  Hämta recensioner
-    api
-      .get(`/books/${id}/reviews`)
-      .then((r) => setReviews(r.data))
-      .catch((err) => console.error("Fel vid hämtning av recensioner:", err));
+    fetchReviews();
 
-    //  Hämta "Want to Read"-status (bara om användaren är inloggad)
     if (isLoggedIn) {
       api
         .get(`/books/${id}/want-to-read-status`)
@@ -61,7 +68,6 @@ export default function BookDetail() {
   const toggleWantToRead = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     try {
       if (isWantToRead) {
         await api.delete(`/books/${book.id}/want-to-read`);
@@ -75,7 +81,6 @@ export default function BookDetail() {
     }
   };
 
-  // Funktion för att spara uppdateringar
   async function handleUpdate(e) {
     e.preventDefault();
     try {
@@ -105,6 +110,29 @@ export default function BookDetail() {
     }
   }
 
+  async function handleDeleteReview(reviewId) {
+    if (!window.confirm("Vill du ta bort din recension?")) return;
+    try {
+      await api.delete(`/reviews/${reviewId}`);
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    } catch (err) {
+      alert(err.response?.data?.error || "Kunde inte ta bort recensionen");
+    }
+  }
+
+  async function handleUpdateReview(reviewId) {
+    try {
+      await api.put(`/reviews/${reviewId}`, {
+        rating: editReviewRating,
+        text: editReviewText,
+      });
+      setEditingReviewId(null);
+      fetchReviews(); 
+    } catch (err) {
+      alert(err.response?.data?.error || "Kunde inte uppdatera recensionen");
+    }
+  }
+
   async function deleteBook() {
     if (!window.confirm(`Är du säker på att du vill ta bort "${book.title}"?`))
       return;
@@ -126,13 +154,12 @@ export default function BookDetail() {
   const isOwner = username === book.created_by_username;
   const avgRating =
     reviews.length > 0
-      ? (
-          reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-        ).toFixed(1)
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
       : "0.0";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">{error}</div>}
       <div className="mb-6">
         <Link to="/" className="text-[#00635d] text-sm hover:underline">
           ← Tillbaka till biblioteket
@@ -141,17 +168,14 @@ export default function BookDetail() {
 
       <div className="bg-[#fdfbf7] rounded-lg border border-[#d8d1c6] p-6 mb-8 shadow-sm">
         <div className="flex flex-col md:flex-row gap-8">
+
           {/* VÄNSTER KOLUMN */}
           <div className="w-full md:w-40 flex-shrink-0">
             <img
-              src={
-                book.cover_url ||
-                "https://via.placeholder.com/150x225?text=Ingen+bild"
-              }
+              src={book.cover_url || "https://via.placeholder.com/150x225?text=Ingen+bild"}
               alt={book.title}
               className="w-full h-auto object-cover rounded shadow-md border border-gray-200"
             />
-
             <div className="mt-4 flex flex-col gap-2">
               <button
                 onClick={toggleWantToRead}
@@ -164,7 +188,6 @@ export default function BookDetail() {
                 {isWantToRead ? "✓ Want to Read" : "Want to Read"}
               </button>
 
-              {/* KNAPPARNA VID TA BORT */}
               {isOwner && !isEditing && (
                 <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-[#ece8df]">
                   <button
@@ -190,171 +213,95 @@ export default function BookDetail() {
           {/* HÖGER KOLUMN */}
           <div className="flex-1">
             {isEditing ? (
-              /* REDIGERINGSLÄGE */
               <form onSubmit={handleUpdate} className="space-y-4">
-                <h2 className="text-lg font-bold text-[#382110] mb-4">
-                  Redigera bokdetaljer
-                </h2>
+                <h2 className="text-lg font-bold text-[#382110] mb-4">Redigera bokdetaljer</h2>
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-gray-400">
-                    Titel
-                  </label>
+                  <label className="text-[10px] uppercase font-bold text-gray-400">Titel</label>
                   <input
-                    className="w-full border border-[#d8d1c6] p-2 rounded"
+                    className="w-full border border-[#d8d1c6] p-2 rounded bg-white"
                     value={editData.title}
-                    onChange={(e) =>
-                      setEditData({ ...editData, title: e.target.value })
-                    }
+                    onChange={(e) => setEditData({ ...editData, title: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-gray-400">
-                    Författare
-                  </label>
+                  <label className="text-[10px] uppercase font-bold text-gray-400">Författare</label>
                   <input
-                    className="w-full border border-[#d8d1c6] p-2 rounded"
+                    className="w-full border border-[#d8d1c6] p-2 rounded bg-white"
                     value={editData.author}
-                    onChange={(e) =>
-                      setEditData({ ...editData, author: e.target.value })
-                    }
+                    onChange={(e) => setEditData({ ...editData, author: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-gray-400">
-                      Genre
-                    </label>
+                    <label className="text-[10px] uppercase font-bold text-gray-400">Genre</label>
                     <input
-                      className="w-full border border-[#d8d1c6] p-2 rounded"
+                      className="w-full border border-[#d8d1c6] p-2 rounded bg-white"
                       value={editData.genre || ""}
-                      onChange={(e) =>
-                        setEditData({ ...editData, genre: e.target.value })
-                      }
+                      onChange={(e) => setEditData({ ...editData, genre: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-gray-400">
-                      Sidor
-                    </label>
+                    <label className="text-[10px] uppercase font-bold text-gray-400">Sidor</label>
                     <input
                       type="number"
-                      className="w-full border border-[#d8d1c6] p-2 rounded"
+                      className="w-full border border-[#d8d1c6] p-2 rounded bg-white"
                       value={editData.page_count || ""}
-                      onChange={(e) =>
-                        setEditData({ ...editData, page_count: e.target.value })
-                      }
+                      onChange={(e) => setEditData({ ...editData, page_count: e.target.value })}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-gray-400">
-                    Beskrivning
-                  </label>
+                  <label className="text-[10px] uppercase font-bold text-gray-400">Beskrivning</label>
                   <textarea
-                    className="w-full border border-[#d8d1c6] p-2 h-32 rounded resize-both"
+                    className="w-full border border-[#d8d1c6] p-2 h-32 rounded bg-white resize-both"
                     value={editData.description || ""}
-                    onChange={(e) =>
-                      setEditData({ ...editData, description: e.target.value })
-                    }
+                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                   />
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button
-                    type="submit"
-                    className="bg-[#409D69] text-white px-6 py-2 rounded text-sm font-bold shadow-sm"
-                  >
+                  <button type="submit" className="bg-[#409D69] text-white px-6 py-2 rounded text-sm font-bold shadow-sm">
                     Spara ändringar
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="text-gray-500 text-sm hover:underline"
-                  >
+                  <button type="button" onClick={() => setIsEditing(false)} className="text-gray-500 text-sm hover:underline">
                     Avbryt
                   </button>
                 </div>
               </form>
             ) : (
-              /* VISNINGSLÄGE */
               <>
-                <h1 className="font-['Georgia',_serif] text-3xl font-bold text-[#382110] mb-1">
-                  {book.title}
-                </h1>
-                <p className="text-xl text-[#00635d] mb-4 italic">
-                  av {book.author}
-                </p>
+                <h1 className="font-['Georgia',_serif] text-3xl font-bold text-[#382110] mb-1">{book.title}</h1>
+                <p className="text-xl text-[#00635d] mb-4 italic">av {book.author}</p>
 
                 <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[#ece8df]">
-                  <StarRating
-                    rating={Math.round(parseFloat(avgRating))}
-                    size="lg"
-                  />
-                  <span className="text-xl font-bold text-[#382110]">
-                    {avgRating}
-                  </span>
+                  <StarRating rating={Math.round(parseFloat(avgRating))} size="lg" />
+                  <span className="text-xl font-bold text-[#382110]">{avgRating}</span>
                   <span className="text-gray-400">|</span>
-                  <span className="text-sm text-gray-600">
-                    {reviews.length} betyg
-                  </span>
+                  <span className="text-sm text-gray-600">{reviews.length} betyg</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-8">
                   {book.genre && (
                     <div>
-                      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                        Genre
-                      </p>
+                      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Genre</p>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {book.genre
-                          .split(/[, ]+/)
-                          .filter(Boolean)
-                          .map((g, i) => (
-                            <span
-                              key={i}
-                              className="bg-[#ece8df] text-[#382110] text-[11px] px-2 py-0.5 rounded-full border border-[#d8d1c6]"
-                            >
-                              {g}
-                            </span>
-                          ))}
+                        {book.genre.split(/[, ]+/).filter(Boolean).map((g, i) => (
+                          <span key={i} className="bg-[#ece8df] text-[#382110] text-[11px] px-2 py-0.5 rounded-full border border-[#d8d1c6]">
+                            {g}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   )}
                   {book.page_count && (
                     <div>
-                      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                        Format
-                      </p>
-                      <p className="text-sm text-[#382110]">
-                        {book.page_count} sidor
-                      </p>
-                    </div>
-                  )}
-                  {book.release_year && (
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                        Publicerad
-                      </p>
-                      <p className="text-sm text-[#382110]">
-                        {book.release_year}{" "}
-                        {book.publisher ? `av ${book.publisher}` : ""}
-                      </p>
-                    </div>
-                  )}
-                  {book.isbn && (
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                        ISBN
-                      </p>
-                      <p className="text-sm text-[#382110]">{book.isbn}</p>
+                      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Format</p>
+                      <p className="text-sm text-[#382110]">{book.page_count} sidor</p>
                     </div>
                   )}
                 </div>
-
                 {book.description && (
                   <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                    <h3 className="text-xs uppercase font-bold text-gray-400 mb-2 tracking-widest">
-                      Beskrivning
-                    </h3>
+                    <h3 className="text-xs uppercase font-bold text-gray-400 mb-2 tracking-widest">Beskrivning</h3>
                     <p>{book.description}</p>
                   </div>
                 )}
@@ -366,18 +313,11 @@ export default function BookDetail() {
 
       {/* RECENSIONER */}
       <div className="bg-[#fdfbf7] rounded-lg border border-[#d8d1c6] p-6 shadow-sm">
-        <h2 className="font-['Georgia',_serif] text-xl font-bold text-[#382110] mb-6">
-          Community-recensioner
-        </h2>
-        {isLoggedIn ? (
-          <form
-            onSubmit={submitReview}
-            className="bg-white border border-[#e8e4d9] p-5 rounded mb-8"
-          >
+        <h2 className="font-['Georgia',_serif] text-xl font-bold text-[#382110] mb-6">Community-recensioner</h2>
+        {isLoggedIn && (
+          <form onSubmit={submitReview} className="bg-white border border-[#e8e4d9] p-5 rounded mb-8">
             <div className="mb-4">
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">
-                Ditt betyg
-              </label>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Ditt betyg</label>
               <StarRating rating={rating} onRate={setRating} size="lg" />
             </div>
             <textarea
@@ -385,34 +325,73 @@ export default function BookDetail() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               required
-              className="w-full border border-[#d8d1c6] rounded p-3 text-sm focus:ring-1 focus:ring-[#409D69] outline-none min-h-[100px] mb-4"
+              className="w-full border border-[#d8d1c6] rounded p-3 text-sm focus:ring-1 focus:ring-[#409D69] outline-none min-h-[100px] mb-4 bg-white"
             />
-            <button
-              type="submit"
-              className="bg-[#382110] text-white px-6 py-2 rounded text-sm font-bold hover:bg-[#4a2f1a]"
-            >
+            <button type="submit" className="bg-[#382110] text-white px-6 py-2 rounded text-sm font-bold hover:bg-[#4a2f1a]">
               Posta recension
             </button>
           </form>
-        ) : null}
+        )}
 
         <div className="space-y-6">
-          {reviews.map((r) => (
-            <div
-              key={r.id}
-              className="border-b border-[#ece8df] last:border-0 pb-6"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="font-bold text-sm text-[#382110]">
-                  {r.username}
-                </span>
-                <StarRating rating={r.rating} size="sm" />
+          {reviews.map((r) => {
+            const isMyReview = r.username === username; // Kolla om det är min recension
+            const isCurrentlyEditing = editingReviewId === r.id;
+
+            return (
+              <div key={r.id} className="border-b border-[#ece8df] last:border-0 pb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-[#382110]">{r.username}</span>
+                    {!isCurrentlyEditing && <StarRating rating={r.rating} size="sm" />}
+                  </div>
+
+                  
+                  {isMyReview && isLoggedIn && !isCurrentlyEditing && (
+                    <div className="flex gap-3 text-xs">
+                      <button
+                        onClick={() => {
+                          setEditingReviewId(r.id);
+                          setEditReviewText(r.text);
+                          setEditReviewRating(r.rating);
+                        }}
+                        className="text-[#00635d] hover:underline font-medium"
+                      >
+                        Redigera
+                      </button>
+                      <button onClick={() => handleDeleteReview(r.id)} className="text-red-600 hover:underline font-medium">
+                        Ta bort
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {isCurrentlyEditing ? (
+                  <div className="bg-white border border-[#d8d1c6] p-3 rounded space-y-3 mt-2">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Ändra betyg</label>
+                      <StarRating rating={editReviewRating} onRate={setEditReviewRating} size="sm" />
+                    </div>
+                    <textarea
+                      value={editReviewText}
+                      onChange={(e) => setEditReviewText(e.target.value)}
+                      className="w-full border border-[#d8d1c6] p-2 text-sm rounded bg-white outline-none focus:ring-1 focus:ring-[#409D69]"
+                    />
+                    <div className="flex gap-2 justify-end text-xs">
+                      <button onClick={() => setEditingReviewId(null)} className="px-3 py-1.5 border border-gray-300 rounded text-gray-600">
+                        Avbryt
+                      </button>
+                      <button onClick={() => handleUpdateReview(r.id)} className="px-3 py-1.5 bg-[#409D69] text-white rounded font-bold">
+                        Spara
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-700 leading-relaxed italic">"{r.text}"</p>
+                )}
               </div>
-              <p className="text-sm text-gray-700 leading-relaxed italic">
-                "{r.text}"
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
