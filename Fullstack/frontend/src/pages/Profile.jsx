@@ -76,7 +76,7 @@ export default function Profile() {
       <div className="flex border-b border-[#d8d1c6] mb-6">
         <button
           onClick={() => setActiveTab('reviews')}
-          className={`py-2 px-4 font-medium text-sm transition-all border-b-2 ${
+          className={`py-2 px-4 font-medium text-sm transition-all border-b-2 cursor-pointer ${
             activeTab === 'reviews'
               ? 'border-[#382110] text-[#382110] font-bold'
               : 'border-transparent text-gray-400 hover:text-gray-600'
@@ -86,7 +86,7 @@ export default function Profile() {
         </button>
         <button
           onClick={() => setActiveTab('wantToRead')}
-          className={`py-2 px-4 font-medium text-sm transition-all border-b-2 ${
+          className={`py-2 px-4 font-medium text-sm transition-all border-b-2 cursor-pointer ${
             activeTab === 'wantToRead'
               ? 'border-[#382110] text-[#382110] font-bold'
               : 'border-transparent text-gray-400 hover:text-gray-600'
