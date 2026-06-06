@@ -37,7 +37,7 @@ export default function ReadingTracker() {
   return (
     <div className="bg-[#fdfbf7] rounded-lg border border-[#d8d1c6] p-6 shadow-sm mb-8">
       <h2 className="font-['Georgia',_serif] text-xl font-bold text-[#382110] mb-4">
-        📖 Just nu läser jag
+     Just nu läser jag
       </h2>
       <div className="grid gap-6">
         {readingList.map((item) => {

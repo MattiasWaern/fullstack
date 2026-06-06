@@ -20,12 +20,10 @@ export default function Profile() {
   const fetchData = () => {
     if (!username) { navigate('/login'); return; }
     
-    
     api.get('/reviews/mine')
       .then(r => setReviews(r.data))
       .catch(err => console.error("Kunde inte hämta recensioner", err));
 
-    
     api.get('/books/my/want-to-read')
       .then(r => setWantToReadBooks(r.data))
       .catch(err => console.error("Kunde inte hämta läslista", err));
@@ -61,6 +59,7 @@ export default function Profile() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       
+      
       <div className="bg-[#382110] text-white rounded-xl p-6 mb-8 flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-[#e8d5b7] flex items-center justify-center text-[#382110] text-2xl font-bold">
           {username?.[0]?.toUpperCase()}
@@ -73,6 +72,9 @@ export default function Profile() {
         </div>
       </div>
 
+      
+      <ReadingTracker />
+      
       
       <div className="flex border-b border-[#d8d1c6] mb-6">
         <button
@@ -97,9 +99,6 @@ export default function Profile() {
         </button>
       </div>
 
-      
-      
-      
       {activeTab === 'reviews' && (
         <div className="flex flex-col gap-4">
           {reviews.length === 0 ? (
@@ -180,8 +179,7 @@ export default function Profile() {
           )}
         </div>
       )}
-
-      <ReadingTracker />
+      
       
       {activeTab === 'wantToRead' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -203,7 +201,6 @@ export default function Profile() {
                     <p className="text-xs text-gray-500 truncate">av {book.author}</p>
                   </div>
                 </Link>
-                
                 
                 <Link 
                   to={`/books/${book.id}`}
