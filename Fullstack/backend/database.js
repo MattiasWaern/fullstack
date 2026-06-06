@@ -42,6 +42,19 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS reading_progress (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    book_id INTEGER NOT NULL,
+    current_page INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, book_id),
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(book_id) REFERENCES books(id)
+);
+
 `);
 
 // Hjälpfunktion för migrering

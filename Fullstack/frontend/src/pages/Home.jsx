@@ -4,6 +4,7 @@ import api from '../api';
 import BookCard from '../components/BookCard';
 import BookSearch from '../components/BookSearch';
 import WantToReadSidebar from '../components/WantToReadSidebar';
+import ReadingTracker from "../components/ReadingTracker";
 
 export default function Home() {
   const [books, setBooks] = useState([]);
@@ -88,9 +89,13 @@ export default function Home() {
           <WantToReadSidebar />
         </div>
 
-        {/* MITTEN - Bokflöde */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-6">
+        {/* MITTEN - Lästracker & Bokflöde */}
+        <div className="flex-1 min-w-0 w-full">
+          
+          {/* HÄR INTEGRERAR VI LÄSMÄTAREN PÅ STARTSIDAN */}
+          <ReadingTracker />
+
+          <div className="flex items-center justify-between mb-6 mt-2">
             <h2 className="font-['Georgia',_serif] text-2xl font-bold text-[#382110]">
               Alla böcker
               <span className="text-[#767676] text-lg font-normal ml-2">({filtered.length})</span>
@@ -118,7 +123,7 @@ export default function Home() {
         </div>
 
         {/* HÖGER - Stats & Topp */}
-        <div style={{ width: '260px' }} className="flex-shrink-0 flex flex-col gap-4">
+        <div style={{ width: '260px' }} className="flex-shrink-0 flex flex-col gap-4 w-full lg:w-auto">
 
           <div className="bg-white rounded-lg border border-[#d8d1c6] p-4 shadow-sm">
             <h3 className="font-['Georgia',_serif] font-bold text-[#382110] mb-3 border-b pb-2">Statistik</h3>

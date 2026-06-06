@@ -2,7 +2,7 @@ const router = require('express').Router();
 const db = require('../database');
 const requireAuth = require('../middleware/auth');
 
-// Hämta alla böcker (med betyg och statistik)
+// 1. Hämta alla böcker (med betyg och statistik)
 router.get('/', (req, res) => {
     const books = db.prepare(`
         SELECT books.*, users.username as created_by_username,
@@ -17,7 +17,7 @@ router.get('/', (req, res) => {
     res.json(books);
 });
 
-// Sök i din EGEN databas
+// 2. Sök i din EGEN databas
 router.get('/search', (req, res) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'Sökterm saknas' });
@@ -30,7 +30,7 @@ router.get('/search', (req, res) => {
     res.json(books);
 });
 
-// HÄMTA MIN LÄSLISTA 
+// 3. HÄMTA MIN LÄSLISTA 
 router.get('/my/want-to-read', requireAuth, (req, res) => {
     try {
         const books = db.prepare(`
@@ -47,8 +47,65 @@ router.get('/my/want-to-read', requireAuth, (req, res) => {
     }
 });
 
+// 4. HÄMTA ALLA BÖCKER SOM ANVÄNDAREN LÄSER JUST NU
+router.get('/my/reading-progress', requireAuth, (req, res) => {
+    try {
+        const progress = db.prepare(`
+            SELECT 
+                reading_progress.current_page,
+                reading_progress.book_id,
+                books.title,
+                books.author,
+                books.cover_url,
+                books.page_count
+            FROM reading_progress
+            JOIN books ON reading_progress.book_id = books.id
+            WHERE reading_progress.user_id = ?
+            ORDER BY reading_progress.updated_at DESC
+        `).all(req.user.id);
+        
+        res.json(progress);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Kunde inte hämta lässtatus' });
+    }
+});
 
-// Hämta specifik bok
+// 5. UPPDATERA ELLER STARTA LÄSNING AV EN BOK
+router.post('/:id/progress', requireAuth, (req, res) => {
+    const { current_page } = req.body;
+    const bookId = req.params.id;
+
+    if (current_page === undefined) {
+        return res.status(400).json({ error: 'current_page krävs' });
+    }
+
+    try {
+        // Kolla hur många sidor boken har totalt
+        const book = db.prepare('SELECT page_count FROM books WHERE id = ?').get(bookId);
+        if (!book) return res.status(404).json({ error: 'Boken hittades inte' });
+        
+        // Se till att man inte kan skriva in fler sidor än vad boken har
+        if (book.page_count && current_page > book.page_count) {
+            return res.status(400).json({ error: `Boken har bara ${book.page_count} sidor!` });
+        }
+
+        db.prepare(`
+            INSERT INTO reading_progress (user_id, book_id, current_page, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id, book_id) DO UPDATE SET
+                current_page = excluded.current_page,
+                updated_at = CURRENT_TIMESTAMP
+        `).run(req.user.id, bookId, current_page);
+
+        res.json({ message: 'Framsteg sparade', current_page });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Kunde inte spara framsteg' });
+    }
+});
+
+// 6. HÄMTA SPECIFIK BOK (Viktigt att denna ligger efter fasta '/my/...' rutter!)
 router.get('/:id', (req, res) => {
     const book = db.prepare(`
         SELECT books.*, users.username as created_by_username
@@ -60,7 +117,7 @@ router.get('/:id', (req, res) => {
     res.json(book);
 });
 
-// Lägg till en bok i din databas
+// 7. LÄGG TILL EN BOK I DATABASEN
 router.post('/', requireAuth, (req, res) => {
     const { 
         title, author, description, cover_url, 
@@ -95,7 +152,7 @@ router.post('/', requireAuth, (req, res) => {
     }
 });
 
-// Lägg till en bok i "Want to read"
+// 8. LÄGG TILL I "WANT TO READ"
 router.post('/:id/want-to-read', requireAuth, (req, res) => {
     try {
         db.prepare(`
@@ -109,7 +166,7 @@ router.post('/:id/want-to-read', requireAuth, (req, res) => {
     }
 });
 
-// Ta bort från "Want to read"
+// 9. TA BORT FRÅN "WANT TO READ"
 router.delete('/:id/want-to-read', requireAuth, (req, res) => {
     try {
         db.prepare(`
@@ -122,7 +179,7 @@ router.delete('/:id/want-to-read', requireAuth, (req, res) => {
     }
 });
 
-// Kolla om boken finns i användarens läslista
+// 10. KOLLA STATUS FÖR "WANT TO READ"
 router.get('/:id/want-to-read-status', requireAuth, (req, res) => {
     try {
         const row = db.prepare(`
@@ -137,7 +194,7 @@ router.get('/:id/want-to-read-status', requireAuth, (req, res) => {
     }
 });
 
-// Uppdatera en bok
+// 11. UPPDATERA EN BOK
 router.put('/:id', requireAuth, (req, res) => {
     const { 
         title, author, description, cover_url, 
@@ -169,7 +226,7 @@ router.put('/:id', requireAuth, (req, res) => {
     }
 });
 
-// Radera en bok
+// 12. RADERA EN BOK
 router.delete('/:id', requireAuth, (req, res) => {
     const { id } = req.params;
 
@@ -185,7 +242,7 @@ router.delete('/:id', requireAuth, (req, res) => {
         }
 
         db.prepare('DELETE FROM reviews WHERE book_id = ?').run(id);
-        db.prepare('DELETE FROM want_to_read WHERE book_id = ?').run(id); // Rensar även läslistan
+        db.prepare('DELETE FROM want_to_read WHERE book_id = ?').run(id);
         const result = db.prepare('DELETE FROM books WHERE id = ?').run(id);
 
         if (result.changes > 0) {
@@ -199,7 +256,7 @@ router.delete('/:id', requireAuth, (req, res) => {
     }
 });
 
-// Hämta recensioner för en bok
+// 13. HÄMTA RECENSIONER FÖR EN BOK
 router.get('/:id/reviews', (req, res) => {
     const reviews = db.prepare(`
         SELECT reviews.*, users.username

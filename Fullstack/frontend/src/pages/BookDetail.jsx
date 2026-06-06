@@ -22,6 +22,7 @@ export default function BookDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [isWantToRead, setIsWantToRead] = useState(false);
+  const [isReading, setIsReading] = useState(false); // Ny!
 
   // Form states
   const [rating, setRating] = useState(3);
@@ -56,12 +57,22 @@ export default function BookDetail() {
     fetchReviews();
 
     if (isLoggedIn) {
+      // Hämta Want to read status
       api
         .get(`/books/${id}/want-to-read-status`)
         .then((r) => {
           setIsWantToRead(r.data.isWantToRead);
         })
         .catch((err) => console.error("Kunde inte hämta lässtatus:", err));
+
+      // Nytt: Kolla om boken redan finns under pågående läsning
+      api
+        .get('/books/my/reading-progress')
+        .then((r) => {
+          const currentlyReading = r.data.some(item => item.book_id === parseInt(id));
+          setIsReading(currentlyReading);
+        })
+        .catch((err) => console.error("Kunde inte hämta pågående lässtatus:", err));
     }
   }, [id, isLoggedIn]);
 
@@ -78,6 +89,22 @@ export default function BookDetail() {
       }
     } catch (err) {
       console.error("Kunde inte uppdatera läslistan");
+    }
+  };
+
+  // Ny funktion för att börja läsa boken på sida 0
+  const startReadingBook = async () => {
+    try {
+      await api.post(`/books/${id}/progress`, { current_page: 0 });
+      setIsReading(true);
+      // Om boken fanns i Want to read kan vi också ta bort den därifrån (valfritt)
+      if (isWantToRead) {
+        await api.delete(`/books/${id}/want-to-read`);
+        setIsWantToRead(false);
+      }
+    } catch (err) {
+      console.error("Kunde inte starta läsningen", err);
+      setError("Kunde inte starta läsningen av boken.");
     }
   };
 
@@ -187,6 +214,21 @@ export default function BookDetail() {
               >
                 {isWantToRead ? "✓ Want to Read" : "Want to Read"}
               </button>
+
+              {/* HÄR ÄR DEN NYA BÖRJA LÄSA KNAPPEN */}
+              {isLoggedIn && (
+                <button
+                  onClick={startReadingBook}
+                  disabled={isReading}
+                  className={`px-4 py-2 rounded-sm text-sm font-medium transition-colors border ${
+                    isReading
+                      ? "bg-[#e8e4d9] text-[#382110] border-[#d8d1c6] cursor-not-allowed"
+                      : "bg-[#382110] text-white hover:bg-[#4a2f1a]"
+                  }`}
+                >
+                  {isReading ? "📖 Läser just nu" : "📖 Börja läsa"}
+                </button>
+              )}
 
               {isOwner && !isEditing && (
                 <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-[#ece8df]">
@@ -335,7 +377,7 @@ export default function BookDetail() {
 
         <div className="space-y-6">
           {reviews.map((r) => {
-            const isMyReview = r.username === username; // Kolla om det är min recension
+            const isMyReview = r.username === username;
             const isCurrentlyEditing = editingReviewId === r.id;
 
             return (
@@ -346,7 +388,6 @@ export default function BookDetail() {
                     {!isCurrentlyEditing && <StarRating rating={r.rating} size="sm" />}
                   </div>
 
-                  
                   {isMyReview && isLoggedIn && !isCurrentlyEditing && (
                     <div className="flex gap-3 text-xs">
                       <button
