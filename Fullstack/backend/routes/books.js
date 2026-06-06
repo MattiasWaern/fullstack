@@ -197,6 +197,63 @@ router.delete('/:id', requireAuth, (req, res) => {
         console.error("Delete error:", err);
         res.status(500).json({ error: 'Ett fel uppstod i databasen' });
     }
+
+    router.get('/my/reading-progress', requireAuth, (req, res) => {
+    try {
+        const progress = db.prepare(`
+            SELECT 
+                reading_progress.current_page,
+                reading_progress.book_id,
+                books.title,
+                books.author,
+                books.cover_url,
+                books.page_count
+            FROM reading_progress
+            JOIN books ON reading_progress.book_id = books.id
+            WHERE reading_progress.user_id = ?
+            ORDER BY reading_progress.updated_at DESC
+        `).all(req.user.id);
+        
+        res.json(progress);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Kunde inte hämta lässtatus' });
+    }
+});
+
+router.post('/:id/progress', requireAuth, (req, res) => {
+    const { current_page } = req.body;
+    const bookId = req.params.id;
+
+    if (current_page === undefined) {
+        return res.status(400).json({ error: 'current_page krävs' });
+    }
+
+    try {
+        // Kolla hur många sidor boken har totalt
+        const book = db.prepare('SELECT page_count FROM books WHERE id = ?').get(bookId);
+        if (!book) return res.status(404).json({ error: 'Boken hittades inte' });
+        
+        // Se till att man inte kan skriva in fler sidor än vad boken har
+        if (book.page_count && current_page > book.page_count) {
+            return res.status(400).json({ error: `Boken har bara ${book.page_count} sidor!` });
+        }
+
+      
+        db.prepare(`
+            INSERT INTO reading_progress (user_id, book_id, current_page, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id, book_id) DO UPDATE SET
+                current_page = excluded.current_page,
+                updated_at = CURRENT_TIMESTAMP
+        `).run(req.user.id, bookId, current_page);
+
+        res.json({ message: 'Framsteg sparade', current_page });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Kunde inte spara framsteg' });
+    }
+});
 });
 
 // Hämta recensioner för en bok
