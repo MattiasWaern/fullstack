@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
 import StarRating from "../components/StarRating";
+import ReadingTracker from "../components/ReadingTracker";
 
 export default function Profile() {
   const [reviews, setReviews] = useState([]);
@@ -180,6 +181,7 @@ export default function Profile() {
         </div>
       )}
 
+      <ReadingTracker />
       
       {activeTab === 'wantToRead' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

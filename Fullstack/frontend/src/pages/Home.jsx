@@ -4,6 +4,7 @@ import api from '../api';
 import BookCard from '../components/BookCard';
 import BookSearch from '../components/BookSearch';
 import WantToReadSidebar from '../components/WantToReadSidebar';
+import ReadingTracker from "./components/ReadingTracker";
 
 export default function Home() {
   const [books, setBooks] = useState([]);
