@@ -15,7 +15,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
-          <span className="text-2xl">📚</span>
+          <span className="text-2xl"></span>
           <span className="font-['Georgia',_'Times_New_Roman',_serif'] text-2xl font-bold text-[#382110] group-hover:text-[#00635d] transition-colors">
             MyReads
           </span>
