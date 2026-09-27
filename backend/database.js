@@ -17,10 +17,10 @@ db.exec(`
     description TEXT,
     cover_url TEXT,
     genre TEXT,
-    page_count INTEGER,      -- Ny!
-    release_year INTEGER,    -- Ny!
-    publisher TEXT,          -- Ny!
-    isbn TEXT UNIQUE,        -- Ny!
+    page_count INTEGER,      
+    release_year INTEGER,    
+    publisher TEXT,          
+    isbn TEXT UNIQUE,        
     created_by INTEGER REFERENCES users(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
