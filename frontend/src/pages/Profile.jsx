@@ -1,218 +1,655 @@
+
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from 'react-router-dom';
-import api from '../api';
+import { useNavigate, Link } from "react-router-dom";
+import api from "../api";
 import StarRating from "../components/StarRating";
 import ReadingTracker from "../components/ReadingTracker";
+
+const FONT = "font-['Bricolage_Grotesque',system-ui,sans-serif]";
+
+const SPINES = [
+  "#D1495B",
+  "#EDAE49",
+  "#00798C",
+  "#30638E",
+  "#66A182",
+  "#1B1B1F",
+];
+
+const focusRing =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#30638E]";
 
 export default function Profile() {
   const [reviews, setReviews] = useState([]);
   const [wantToReadBooks, setWantToReadBooks] = useState([]);
-  const [activeTab, setActiveTab] = useState('reviews'); 
-  
-  const username = localStorage.getItem('username');
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("reviews");
 
-  // States för redigering av specifik recension
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [editReviewText, setEditReviewText] = useState("");
   const [editReviewRating, setEditReviewRating] = useState(3);
 
-  const fetchData = () => {
-    if (!username) { navigate('/login'); return; }
-    
-    api.get('/reviews/mine')
-      .then(r => setReviews(r.data))
-      .catch(err => console.error("Kunde inte hämta recensioner", err));
+  const [loading, setLoading] = useState(true);
+  const [savingReview, setSavingReview] = useState(false);
+  const [error, setError] = useState("");
 
-    api.get('/books/my/want-to-read')
-      .then(r => setWantToReadBooks(r.data))
-      .catch(err => console.error("Kunde inte hämta läslista", err));
-  };
+  const username = localStorage.getItem("username");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!username) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    let active = true;
+
+    async function loadProfile() {
+      try {
+        const [reviewsRes, wantToReadRes] = await Promise.all([
+          api.get("/reviews/mine"),
+          api.get("/books/my/want-to-read"),
+        ]);
+
+        if (!active) return;
+
+        setReviews(reviewsRes.data);
+        setWantToReadBooks(wantToReadRes.data);
+      } catch (err) {
+        if (active) {
+          console.error("Kunde inte hämta profildata:", err);
+          setError("Kunde inte ladda all profilinformation.");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, [username, navigate]);
 
   async function handleDeleteReview(reviewId) {
-    if (!window.confirm("Vill du ta bort den här recensionen?")) return;
+    if (!window.confirm("Vill du ta bort den här recensionen?")) {
+      return;
+    }
+
     try {
       await api.delete(`/reviews/${reviewId}`);
-      setReviews(prev => prev.filter(r => r.id !== reviewId));
+
+      setReviews((prev) =>
+        prev.filter((review) => review.id !== reviewId)
+      );
+
+      setError("");
     } catch (err) {
-      alert("Kunde inte ta bort recensionen");
+      setError(
+        err.response?.data?.error ||
+          "Kunde inte ta bort recensionen."
+      );
     }
+  }
+
+  function startEditingReview(review) {
+    setEditingReviewId(review.id);
+    setEditReviewText(review.text);
+    setEditReviewRating(review.rating);
+    setError("");
+  }
+
+  function cancelEditingReview() {
+    setEditingReviewId(null);
+    setEditReviewText("");
+    setEditReviewRating(3);
   }
 
   async function handleUpdateReview(reviewId) {
+    if (!editReviewText.trim()) {
+      setError("Recensionen kan inte vara tom.");
+      return;
+    }
+
+    setSavingReview(true);
+    setError("");
+
     try {
       await api.put(`/reviews/${reviewId}`, {
         rating: editReviewRating,
-        text: editReviewText
+        text: editReviewText.trim(),
       });
-      setEditingReviewId(null);
-      fetchData(); // Ladda om all data
+
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewId
+            ? {
+                ...review,
+                rating: editReviewRating,
+                text: editReviewText.trim(),
+              }
+            : review
+        )
+      );
+
+      cancelEditingReview();
     } catch (err) {
-      alert("Kunde inte uppdatera recensionen");
+      setError(
+        err.response?.data?.error ||
+          "Kunde inte uppdatera recensionen."
+      );
+    } finally {
+      setSavingReview(false);
     }
   }
 
-  return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      
-      
-      <div className="bg-[#382110] text-white rounded-xl p-6 mb-8 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-[#e8d5b7] flex items-center justify-center text-[#382110] text-2xl font-bold">
-          {username?.[0]?.toUpperCase()}
+  const averageRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce(
+            (sum, review) => sum + Number(review.rating || 0),
+            0
+          ) / reviews.length
+        ).toFixed(1)
+      : "0.0";
+
+  if (loading) {
+    return (
+      <div
+        className={`flex min-h-[60vh] items-center justify-center bg-[#FAFAFA] ${FONT}`}
+      >
+        <div className="flex items-center gap-3 text-[#52525B]">
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#30638E] border-t-transparent" />
+          <span className="text-sm font-semibold">
+            Laddar din profil...
+          </span>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">{username}</h1>
-          <p className="text-[#e8d5b7] text-sm">
-            {reviews.length} recenserade | {wantToReadBooks.length} i läslistan
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen bg-[#FAFAFA] text-[#1B1B1F] ${FONT}`}>
+
+      {/* PROFILHEADER */}
+      <header className="border-b border-[#E4E4E7] bg-white">
+        <div className="mx-auto max-w-7xl px-4 pb-10 pt-10 sm:pt-14">
+
+          {/* TILLBAKA */}
+          <Link
+            to="/"
+            className={`mb-8 inline-flex items-center gap-2 text-sm font-semibold text-[#71717A] transition-colors hover:text-[#1B1B1F] ${focusRing}`}
+          >
+            <span aria-hidden="true">←</span>
+            Tillbaka till biblioteket
+          </Link>
+
+          <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+
+            {/* PROFILINFORMATION */}
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+
+              {/* AVATAR */}
+              <div className="relative shrink-0">
+                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-[#30638E] text-4xl font-extrabold text-white shadow-sm">
+                  {username?.[0]?.toUpperCase() || "?"}
+                </div>
+
+                <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full border-4 border-white bg-[#EDAE49] text-lg">
+                  📚
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#00798C]">
+                  Min läsprofil
+                </p>
+
+                <h1 className="break-words text-4xl font-extrabold tracking-tight sm:text-5xl">
+                  {username}
+                </h1>
+
+                <p className="mt-3 text-sm text-[#71717A]">
+                  Din egen plats för böcker, recensioner och läsmål.
+                </p>
+              </div>
+            </div>
+
+            {/* STATISTIK */}
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              {[
+                {
+                  value: reviews.length,
+                  label: "Recensioner",
+                  color: "#D1495B",
+                },
+                {
+                  value: wantToReadBooks.length,
+                  label: "Vill läsa",
+                  color: "#00798C",
+                },
+                {
+                  value: averageRating,
+                  label: "Snittbetyg",
+                  color: "#EDAE49",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="min-w-0 rounded-2xl border border-[#E4E4E7] bg-[#FAFAFA] px-4 py-4 sm:min-w-[115px]"
+                >
+                  <div
+                    className="mb-3 h-1 w-8 rounded-full"
+                    style={{ backgroundColor: stat.color }}
+                  />
+
+                  <p className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+                    {stat.value}
+                  </p>
+
+                  <p className="mt-1 text-[11px] font-semibold text-[#71717A]">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* FÄRGAD BOKHYLLA */}
+        <div className="flex h-1.5">
+          {SPINES.map((color) => (
+            <div
+              key={color}
+              className="flex-1"
+              style={{ backgroundColor: color }}
+            />
+          ))}
+        </div>
+      </header>
+
+      {/* HUVUDINNEHÅLL */}
+      <main className="mx-auto max-w-7xl px-4 py-10">
+
+        {/* FELMEDDELANDE */}
+        {error && (
+          <div
+            role="alert"
+            className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-5 py-4 text-sm text-[#B91C1C]"
+          >
+            <span>{error}</span>
+
+            <button
+              onClick={() => setError("")}
+              aria-label="Stäng felmeddelande"
+              className="font-bold"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* LÄSTRACKER */}
+        <ReadingTracker />
+
+        {/* SEKTIONSTITEL */}
+        <div className="mb-6 mt-10">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#00798C]">
+            Mitt bibliotek
+          </p>
+
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Mina böcker & recensioner
+          </h2>
+
+          <p className="mt-2 text-sm text-[#71717A]">
+            Håll koll på dina tankar och böcker du vill läsa.
           </p>
         </div>
-      </div>
 
-      
-      <ReadingTracker />
-      
-      
-      <div className="flex border-b border-[#d8d1c6] mb-6">
-        <button
-          onClick={() => setActiveTab('reviews')}
-          className={`py-2 px-4 font-medium text-sm transition-all border-b-2 cursor-pointer ${
-            activeTab === 'reviews'
-              ? 'border-[#382110] text-[#382110] font-bold'
-              : 'border-transparent text-gray-400 hover:text-gray-600'
-          }`}
+        {/* FLIKAR */}
+        <div
+          role="tablist"
+          aria-label="Profilinnehåll"
+          className="mb-8 flex flex-wrap gap-2 border-b border-[#E4E4E7] pb-4"
         >
-          Mina recensioner ({reviews.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('wantToRead')}
-          className={`py-2 px-4 font-medium text-sm transition-all border-b-2 cursor-pointer ${
-            activeTab === 'wantToRead'
-              ? 'border-[#382110] text-[#382110] font-bold'
-              : 'border-transparent text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          Want to Read ({wantToReadBooks.length})
-        </button>
-      </div>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "reviews"}
+            onClick={() => setActiveTab("reviews")}
+            className={`rounded-full px-5 py-2.5 text-sm font-bold transition-all ${focusRing} ${
+              activeTab === "reviews"
+                ? "bg-[#1B1B1F] text-white"
+                : "border border-[#D4D4D8] bg-white text-[#52525B] hover:border-[#1B1B1F] hover:text-[#1B1B1F]"
+            }`}
+          >
+            Mina recensioner
+            <span
+              className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+                activeTab === "reviews"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#F4F4F5] text-[#71717A]"
+              }`}
+            >
+              {reviews.length}
+            </span>
+          </button>
 
-      {activeTab === 'reviews' && (
-        <div className="flex flex-col gap-4">
-          {reviews.length === 0 ? (
-            <p className="text-gray-400 italic">Du har inte skrivit några recensioner än.</p>
-          ) : (
-            reviews.map(r => {
-              const isCurrentlyEditing = editingReviewId === r.id;
-              return (
-                <div key={r.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-start">
-                  <div className="flex gap-4 flex-1 items-start min-w-0">
-                    <Link to={`/books/${r.book_id}`} className="flex-shrink-0">
-                      <img
-                        src={r.cover_url || 'https://via.placeholder.com/48x72?text=Bok'}
-                        alt={r.book_title}
-                        className="w-12 h-18 object-cover rounded shadow-sm hover:opacity-80 transition-opacity"
-                        onError={e => e.target.src = 'https://via.placeholder.com/48x72?text=Bok'}
-                      />
-                    </Link>
-                    <div className="flex-1 min-w-0">
-                      <Link to={`/books/${r.book_id}`} className="font-semibold text-[#382110] hover:underline block truncate">
-                        {r.book_title}
-                      </Link>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "wantToRead"}
+            onClick={() => setActiveTab("wantToRead")}
+            className={`rounded-full px-5 py-2.5 text-sm font-bold transition-all ${focusRing} ${
+              activeTab === "wantToRead"
+                ? "bg-[#1B1B1F] text-white"
+                : "border border-[#D4D4D8] bg-white text-[#52525B] hover:border-[#1B1B1F] hover:text-[#1B1B1F]"
+            }`}
+          >
+            Vill läsa
+            <span
+              className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+                activeTab === "wantToRead"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#F4F4F5] text-[#71717A]"
+              }`}
+            >
+              {wantToReadBooks.length}
+            </span>
+          </button>
+        </div>
 
-                      {isCurrentlyEditing ? (
-                        <div className="mt-2 space-y-2 bg-[#fdfbf7] p-3 rounded border border-gray-100">
-                          <div>
-                            <label className="block text-[10px] uppercase font-bold text-gray-400 mb-0.5">Betyg</label>
-                            <StarRating rating={editReviewRating} onRate={setEditReviewRating} size="sm" />
-                          </div>
-                          <textarea
-                            value={editReviewText}
-                            onChange={e => setEditReviewText(e.target.value)}
-                            className="w-full border border-[#d8d1c6] p-2 text-sm rounded bg-white outline-none focus:ring-1 focus:ring-[#409D69]"
+        {/* RECENSIONER */}
+        {activeTab === "reviews" && (
+          <section role="tabpanel">
+            {reviews.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[#D4D4D8] bg-white px-6 py-16 text-center">
+                <div className="mb-4 text-4xl">✍️</div>
+
+                <h3 className="text-xl font-extrabold">
+                  Inga recensioner än
+                </h3>
+
+                <p className="mx-auto mt-2 max-w-md text-sm text-[#71717A]">
+                  När du recenserar en bok dyker den upp här.
+                  Börja med att utforska biblioteket.
+                </p>
+
+                <Link
+                  to="/"
+                  className={`mt-6 inline-flex rounded-full bg-[#1B1B1F] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#3A3A42] ${focusRing}`}
+                >
+                  Utforska böcker
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                {reviews.map((review, index) => {
+                  const isEditing = editingReviewId === review.id;
+                  const color = SPINES[index % SPINES.length];
+
+                  return (
+                    <article
+                      key={review.id}
+                      className="flex flex-col overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white transition-shadow hover:shadow-md"
+                    >
+                      <div className="flex flex-1 gap-4 p-5 sm:p-6">
+
+                        {/* OMSLAG */}
+                        <Link
+                          to={`/books/${review.book_id}`}
+                          className="group relative block w-20 shrink-0 self-start"
+                        >
+                          <div
+                            className="absolute bottom-0 left-0 top-0 z-10 w-1.5 rounded-l-sm"
+                            style={{ backgroundColor: color }}
                           />
-                          <div className="flex gap-2 justify-end text-xs">
-                            <button onClick={() => setEditingReviewId(null)} className="px-2 py-1 border border-gray-300 rounded text-gray-600 bg-white">
-                              Avbryt
+
+                          {review.cover_url ? (
+                            <img
+                              src={review.cover_url}
+                              alt={`Omslag till ${review.book_title}`}
+                              className="aspect-[2/3] w-full rounded-md object-cover shadow-sm transition-transform group-hover:-translate-y-1"
+                            />
+                          ) : (
+                            <div
+                              className="flex aspect-[2/3] items-center justify-center rounded-md p-2 text-center text-xs font-bold text-white"
+                              style={{ backgroundColor: color }}
+                            >
+                              {review.book_title}
+                            </div>
+                          )}
+                        </Link>
+
+                        {/* RECENSIONSINNEHÅLL */}
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            to={`/books/${review.book_id}`}
+                            className="line-clamp-2 text-lg font-extrabold leading-snug tracking-tight text-[#1B1B1F] transition-colors hover:text-[#30638E]"
+                          >
+                            {review.book_title}
+                          </Link>
+
+                          {isEditing ? (
+                            <div className="mt-4 space-y-4">
+                              <div>
+                                <label className="mb-2 block text-xs font-bold text-[#52525B]">
+                                  Ditt betyg
+                                </label>
+
+                                <StarRating
+                                  rating={editReviewRating}
+                                  onRate={setEditReviewRating}
+                                  size="sm"
+                                />
+                              </div>
+
+                              <div>
+                                <label
+                                  htmlFor={`review-${review.id}`}
+                                  className="mb-2 block text-xs font-bold text-[#52525B]"
+                                >
+                                  Din recension
+                                </label>
+
+                                <textarea
+                                  id={`review-${review.id}`}
+                                  rows={4}
+                                  value={editReviewText}
+                                  onChange={(e) =>
+                                    setEditReviewText(e.target.value)
+                                  }
+                                  className="w-full resize-y rounded-xl border border-[#D4D4D8] bg-white p-3 text-sm outline-none focus:border-[#30638E] focus:ring-2 focus:ring-[#30638E]/20"
+                                />
+                              </div>
+
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleUpdateReview(review.id)
+                                  }
+                                  disabled={savingReview}
+                                  className="rounded-full bg-[#1B1B1F] px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3A3A42] disabled:opacity-50"
+                                >
+                                  {savingReview
+                                    ? "Sparar..."
+                                    : "Spara ändringar"}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={cancelEditingReview}
+                                  className="rounded-full border border-[#D4D4D8] bg-white px-5 py-2 text-xs font-semibold text-[#52525B] hover:border-[#1B1B1F]"
+                                >
+                                  Avbryt
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="mt-3 flex items-center gap-2">
+                                <StarRating
+                                  rating={review.rating}
+                                  size="sm"
+                                />
+
+                                <span className="text-xs font-bold text-[#71717A]">
+                                  {review.rating}/5
+                                </span>
+                              </div>
+
+                              <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-[#52525B]">
+                                {review.text}
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* KORTFOOTER */}
+                      {!isEditing && (
+                        <div className="flex items-center justify-between gap-3 border-t border-[#E4E4E7] bg-[#FAFAFA] px-5 py-3 sm:px-6">
+                          <span className="text-xs font-semibold text-[#71717A]">
+                            Min recension
+                          </span>
+
+                          <div className="flex items-center gap-4">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                startEditingReview(review)
+                              }
+                              className={`text-xs font-bold text-[#30638E] hover:underline ${focusRing}`}
+                            >
+                              Redigera
                             </button>
-                            <button onClick={() => handleUpdateReview(r.id)} className="px-2 py-1 bg-[#409D69] text-white rounded font-bold">
-                              Spara
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDeleteReview(review.id)
+                              }
+                              className={`text-xs font-bold text-[#D1495B] hover:underline ${focusRing}`}
+                            >
+                              Ta bort
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        <>
-                          <div className="my-1">
-                            <StarRating rating={r.rating} size="sm" />
-                          </div>
-                          <p className="text-gray-600 text-sm italic">"{r.text}"</p>
-                        </>
                       )}
-                    </div>
-                  </div>
 
-                  {!isCurrentlyEditing && (
-                    <div className="flex md:flex-col gap-3 md:gap-1 text-xs self-end md:self-start flex-shrink-0 pt-2 md:pt-0">
-                      <button
-                        onClick={() => {
-                          setEditingReviewId(r.id);
-                          setEditReviewText(r.text);
-                          setEditReviewRating(r.rating);
-                        }}
-                        className="text-[#00635d] hover:underline font-medium px-2 py-1 md:p-0 bg-gray-50 md:bg-transparent rounded"
-                      >
-                        Redigera
-                      </button>
-                      <button
-                        onClick={() => handleDeleteReview(r.id)}
-                        className="text-red-600 hover:underline font-medium px-2 py-1 md:p-0 bg-gray-50 md:bg-transparent rounded"
-                      >
-                        Ta bort
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
-      
-      
-      {activeTab === 'wantToRead' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {wantToReadBooks.length === 0 ? (
-            <p className="text-gray-400 italic col-span-full">Din läslista är tom.</p>
-          ) : (
-            wantToReadBooks.map(book => (
-              <div key={book.id} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm flex flex-col justify-between">
-                <Link to={`/books/${book.id}`} className="group flex flex-col gap-2">
-                  <img
-                    src={book.cover_url || 'https://via.placeholder.com/150x225?text=Ingen+bild'}
-                    alt={book.title}
-                    className="w-full h-full object-cover rounded shadow-sm group-hover:opacity-90 transition-opacity"
-                  /> 
-                  <div>
-                    <p className="font-bold text-[#382110] text-sm line-clamp-1 group-hover:text-[#409D69]">
-                      {book.title}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">av {book.author}</p>
-                  </div>
-                </Link>
-                
-                <Link 
-                  to={`/books/${book.id}`}
-                  className="mt-3 block text-center text-xs bg-[#f4f1ea] border border-[#d8d1c6] text-[#382110] py-1 rounded hover:bg-[#ece8df] transition-colors font-medium"
+                      {/* FÄRGAD DETALJ */}
+                      <div
+                        className="h-1"
+                        style={{ backgroundColor: color }}
+                      />
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* VILL LÄSA */}
+        {activeTab === "wantToRead" && (
+          <section role="tabpanel">
+            {wantToReadBooks.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[#D4D4D8] bg-white px-6 py-16 text-center">
+                <div className="mb-4 text-4xl">📚</div>
+
+                <h3 className="text-xl font-extrabold">
+                  Din läslista är tom
+                </h3>
+
+                <p className="mx-auto mt-2 max-w-md text-sm text-[#71717A]">
+                  Hittat en bok du vill läsa? Lägg till den i din
+                  läslista så dyker den upp här.
+                </p>
+
+                <Link
+                  to="/"
+                  className={`mt-6 inline-flex rounded-full bg-[#1B1B1F] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#3A3A42] ${focusRing}`}
                 >
-                  Skriv recension
+                  Hitta böcker
                 </Link>
               </div>
-            ))
-          )}
-        </div>
-      )}
+            ) : (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {wantToReadBooks.map((book, index) => {
+                  const color = SPINES[index % SPINES.length];
+
+                  return (
+                    <article
+                      key={book.id}
+                      className="group flex flex-col overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white transition-all hover:-translate-y-1 hover:shadow-md"
+                    >
+                      <Link
+                        to={`/books/${book.id}`}
+                        className="flex flex-1 flex-col p-3 sm:p-4"
+                      >
+                        {/* BOKOMSLAG */}
+                        <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-[#F4F4F5]">
+                          <div
+                            className="absolute bottom-0 left-0 top-0 z-10 w-1.5"
+                            style={{ backgroundColor: color }}
+                          />
+
+                          {book.cover_url ? (
+                            <img
+                              src={book.cover_url}
+                              alt={`Omslag till ${book.title}`}
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div
+                              className="flex h-full items-center justify-center px-3 text-center text-sm font-bold text-white"
+                              style={{ backgroundColor: color }}
+                            >
+                              {book.title}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* BOKINFORMATION */}
+                        <div className="mt-4">
+                          <h3 className="line-clamp-2 text-sm font-extrabold leading-snug text-[#1B1B1F] transition-colors group-hover:text-[#30638E]">
+                            {book.title}
+                          </h3>
+
+                          <p className="mt-1 line-clamp-1 text-xs text-[#71717A]">
+                            av {book.author}
+                          </p>
+                        </div>
+                      </Link>
+
+                      <div className="border-t border-[#E4E4E7] px-3 py-3 sm:px-4">
+                        <Link
+                          to={`/books/${book.id}`}
+                          className={`block rounded-full border border-[#D4D4D8] bg-[#FAFAFA] px-3 py-2 text-center text-xs font-bold text-[#1B1B1F] transition-colors hover:border-[#1B1B1F] hover:bg-[#1B1B1F] hover:text-white ${focusRing}`}
+                        >
+                          Skriv recension ↗
+                        </Link>
+                      </div>
+
+                      <div
+                        className="h-1"
+                        style={{ backgroundColor: color }}
+                      />
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+      </main>
+
+      {/* FOOTER */}
+      <footer className="mt-12 border-t border-[#E4E4E7] bg-white py-6 text-center text-sm text-[#71717A]">
+        © 2026 MyReads. Byggd för böcker.
+      </footer>
     </div>
   );
 }
