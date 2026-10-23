@@ -171,270 +171,138 @@ export default function BookDetail() {
     }
   }
 
-  if (!book)
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="w-8 h-8 border-2 border-[#382110] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+  const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#30638E]";
+  const inputClass = `w-full rounded-xl border border-[#D4D4D8] bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#30638E] ${focusRing}`;
+  const primaryButton = `rounded-full bg-[#1B1B1F] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#3A3A42] disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
+  const secondaryButton = `rounded-full border border-[#D4D4D8] bg-white px-5 py-2.5 text-sm font-semibold transition-colors hover:border-[#1B1B1F] ${focusRing}`;
+  const spineColors = ["#D1495B", "#EDAE49", "#00798C", "#30638E", "#66A182", "#1B1B1F"];
+  const spineColor = spineColors[(Number(id) || 0) % spineColors.length];
+
+  if (!book) return (
+    <div className="flex min-h-[60vh] items-center justify-center bg-[#FAFAFA]">
+      <div role="status" aria-label="Laddar bok" className="h-9 w-9 animate-spin rounded-full border-4 border-[#E4E4E7] border-t-[#30638E]" />
+    </div>
+  );
 
   const isOwner = username === book.created_by_username;
-  const avgRating =
-    reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : "0.0";
+  const avgRating = reviews.length
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : "0.0";
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">{error}</div>}
-      <div className="mb-6">
-        <Link to="/" className="text-[#00635d] text-sm hover:underline">
-          ← Tillbaka till biblioteket
-        </Link>
-      </div>
-
-      <div className="bg-[#fdfbf7] rounded-lg border border-[#d8d1c6] p-6 mb-8 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-8">
-
-          {/* VÄNSTER KOLUMN */}
-          <div className="w-full md:w-40 flex-shrink-0">
-            <img
-              src={book.cover_url || "https://via.placeholder.com/150x225?text=Ingen+bild"}
-              alt={book.title}
-              className="w-full h-auto object-cover rounded shadow-md border border-gray-200"
-            />
-            <div className="mt-4 flex flex-col gap-2">
-              <button
-                onClick={toggleWantToRead}
-                className={`px-4 py-2 rounded-sm text-sm font-medium transition-colors ${
-                  isWantToRead
-                    ? "bg-[#f4f1ea] text-[#382110] border border-[#d8d1c6]"
-                    : "bg-[#409D69] text-white hover:bg-[#358558]"
-                }`}
-              >
-                {isWantToRead ? "✓ Want to Read" : "Want to Read"}
-              </button>
-
-              {/* HÄR ÄR DEN NYA BÖRJA LÄSA KNAPPEN */}
-              {isLoggedIn && (
-                <button
-                  onClick={startReadingBook}
-                  disabled={isReading}
-                  className={`px-4 py-2 rounded-sm text-sm font-medium transition-colors border ${
-                    isReading
-                      ? "bg-[#e8e4d9] text-[#382110] border-[#d8d1c6] cursor-not-allowed"
-                      : "bg-[#382110] text-white hover:bg-[#4a2f1a]"
-                  }`}
-                >
-                  {isReading ? "📖 Läser just nu" : "📖 Börja läsa"}
-                </button>
+    <div className="min-h-screen bg-[#FAFAFA] text-[#1B1B1F] font-['Bricolage_Grotesque',system-ui,sans-serif]">
+      <header className="border-b border-[#E4E4E7] bg-white">
+        <div className="mx-auto max-w-7xl px-4 pb-12 pt-10 md:pt-16">
+          <Link to="/" className={`mb-8 inline-flex text-sm font-semibold text-[#30638E] hover:underline ${focusRing}`}>← Tillbaka till biblioteket</Link>
+          <div className="flex flex-col gap-8 md:flex-row md:items-end md:gap-12">
+            <div className="relative w-40 shrink-0 sm:w-48">
+              {book.cover_url ? (
+                <img src={book.cover_url} alt={`Omslag till ${book.title}`} className="aspect-[2/3] w-full rounded-md border border-[#E4E4E7] object-cover shadow-xl" />
+              ) : (
+                <div className="flex aspect-[2/3] items-center justify-center rounded-md p-5 text-center text-lg font-extrabold text-white shadow-xl" style={{ backgroundColor: spineColor }}>{book.title}</div>
               )}
-
-              {isOwner && !isEditing && (
-                <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-[#ece8df]">
-                  <button
-                    onClick={() => {
-                      setIsEditing(true);
-                      setEditData(book);
-                    }}
-                    className="w-full text-[#00635d] text-xs py-1.5 hover:bg-[#f4f1ea] rounded transition-colors border border-[#d8d1c6]"
-                  >
-                    Redigera info
-                  </button>
-                  <button
-                    onClick={deleteBook}
-                    className="w-full text-red-600 text-xs py-1.5 hover:bg-red-50 rounded transition-colors"
-                  >
-                    Ta bort bok
-                  </button>
-                </div>
-              )}
+              <div className="absolute -bottom-2 left-2 right-2 -z-10 h-4 rounded-full bg-black/10 blur-md" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.2em] text-[#00798C]">Ur biblioteket</p>
+              <h1 className="mb-3 max-w-3xl break-words text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">{book.title}</h1>
+              <p className="mb-6 text-xl text-[#52525B]">av <span className="font-semibold text-[#1B1B1F]">{book.author}</span></p>
+              <div className="flex flex-wrap items-center gap-3">
+                <StarRating rating={Math.round(Number(avgRating))} size="lg" />
+                <span className="text-xl font-extrabold">{avgRating}</span>
+                <span className="text-sm text-[#71717A]">({reviews.length} recensioner)</span>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {(book.genre || "").split(/[, ]+/).filter(Boolean).map((g, i) => <span key={`${g}-${i}`} className="rounded-full border border-[#D4D4D8] bg-[#FAFAFA] px-3 py-1 text-xs font-semibold">{g}</span>)}
+                {book.page_count && <span className="rounded-full border border-[#D4D4D8] bg-[#FAFAFA] px-3 py-1 text-xs font-semibold">{book.page_count} sidor</span>}
+              </div>
             </div>
           </div>
+        </div>
+        <div className="h-2 bg-[#1B1B1F]" />
+      </header>
 
-          {/* HÖGER KOLUMN */}
-          <div className="flex-1">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+        <main className="min-w-0 space-y-8">
+          {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{error}</div>}
+
+          <section className="rounded-2xl border border-[#E4E4E7] bg-white p-6 md:p-8">
             {isEditing ? (
-              <form onSubmit={handleUpdate} className="space-y-4">
-                <h2 className="text-lg font-bold text-[#382110] mb-4">Redigera bokdetaljer</h2>
-                <div>
-                  <label className="text-[10px] uppercase font-bold text-gray-400">Titel</label>
-                  <input
-                    className="w-full border border-[#d8d1c6] p-2 rounded bg-white"
-                    value={editData.title}
-                    onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                  />
+              <form onSubmit={handleUpdate} className="space-y-5">
+                <h2 className="text-2xl font-extrabold tracking-tight">Redigera bokdetaljer</h2>
+                <div><label className="mb-2 block text-sm font-semibold" htmlFor="edit-title">Titel</label><input id="edit-title" required className={inputClass} value={editData.title || ""} onChange={e => setEditData({ ...editData, title: e.target.value })} /></div>
+                <div><label className="mb-2 block text-sm font-semibold" htmlFor="edit-author">Författare</label><input id="edit-author" required className={inputClass} value={editData.author || ""} onChange={e => setEditData({ ...editData, author: e.target.value })} /></div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div><label className="mb-2 block text-sm font-semibold" htmlFor="edit-genre">Genre</label><input id="edit-genre" className={inputClass} value={editData.genre || ""} onChange={e => setEditData({ ...editData, genre: e.target.value })} /></div>
+                  <div><label className="mb-2 block text-sm font-semibold" htmlFor="edit-pages">Antal sidor</label><input id="edit-pages" type="number" min="0" className={inputClass} value={editData.page_count ?? ""} onChange={e => setEditData({ ...editData, page_count: e.target.value })} /></div>
                 </div>
-                <div>
-                  <label className="text-[10px] uppercase font-bold text-gray-400">Författare</label>
-                  <input
-                    className="w-full border border-[#d8d1c6] p-2 rounded bg-white"
-                    value={editData.author}
-                    onChange={(e) => setEditData({ ...editData, author: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] uppercase font-bold text-gray-400">Genre</label>
-                    <input
-                      className="w-full border border-[#d8d1c6] p-2 rounded bg-white"
-                      value={editData.genre || ""}
-                      onChange={(e) => setEditData({ ...editData, genre: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase font-bold text-gray-400">Sidor</label>
-                    <input
-                      type="number"
-                      className="w-full border border-[#d8d1c6] p-2 rounded bg-white"
-                      value={editData.page_count || ""}
-                      onChange={(e) => setEditData({ ...editData, page_count: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase font-bold text-gray-400">Beskrivning</label>
-                  <textarea
-                    className="w-full border border-[#d8d1c6] p-2 h-32 rounded bg-white resize-both"
-                    value={editData.description || ""}
-                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                  />
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button type="submit" className="bg-[#409D69] text-white px-6 py-2 rounded text-sm font-bold shadow-sm">
-                    Spara ändringar
-                  </button>
-                  <button type="button" onClick={() => setIsEditing(false)} className="text-gray-500 text-sm hover:underline">
-                    Avbryt
-                  </button>
-                </div>
+                <div><label className="mb-2 block text-sm font-semibold" htmlFor="edit-description">Beskrivning</label><textarea id="edit-description" rows={5} className={inputClass} value={editData.description || ""} onChange={e => setEditData({ ...editData, description: e.target.value })} /></div>
+                <div className="flex flex-wrap gap-3"><button type="submit" className={primaryButton}>Spara ändringar</button><button type="button" onClick={() => setIsEditing(false)} className={secondaryButton}>Avbryt</button></div>
               </form>
             ) : (
               <>
-                <h1 className="font-['Georgia',_serif] text-3xl font-bold text-[#382110] mb-1">{book.title}</h1>
-                <p className="text-xl text-[#00635d] mb-4 italic">av {book.author}</p>
-
-                <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[#ece8df]">
-                  <StarRating rating={Math.round(parseFloat(avgRating))} size="lg" />
-                  <span className="text-xl font-bold text-[#382110]">{avgRating}</span>
-                  <span className="text-gray-400">|</span>
-                  <span className="text-sm text-gray-600">{reviews.length} betyg</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-8">
-                  {book.genre && (
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Genre</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {book.genre.split(/[, ]+/).filter(Boolean).map((g, i) => (
-                          <span key={i} className="bg-[#ece8df] text-[#382110] text-[11px] px-2 py-0.5 rounded-full border border-[#d8d1c6]">
-                            {g}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {book.page_count && (
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Format</p>
-                      <p className="text-sm text-[#382110]">{book.page_count} sidor</p>
-                    </div>
-                  )}
-                </div>
-                {book.description && (
-                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                    <h3 className="text-xs uppercase font-bold text-gray-400 mb-2 tracking-widest">Beskrivning</h3>
-                    <p>{book.description}</p>
-                  </div>
-                )}
+                <h2 className="mb-5 text-3xl font-extrabold tracking-tight">Om boken</h2>
+                {book.description ? <p className="whitespace-pre-line text-base leading-8 text-[#52525B]">{book.description}</p> : <p className="text-[#71717A]">Ingen beskrivning har lagts till än.</p>}
               </>
             )}
-          </div>
-        </div>
-      </div>
+          </section>
 
-      {/* RECENSIONER */}
-      <div className="bg-[#fdfbf7] rounded-lg border border-[#d8d1c6] p-6 shadow-sm">
-        <h2 className="font-['Georgia',_serif] text-xl font-bold text-[#382110] mb-6">Community-recensioner</h2>
-        {isLoggedIn && (
-          <form onSubmit={submitReview} className="bg-white border border-[#e8e4d9] p-5 rounded mb-8">
-            <div className="mb-4">
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Ditt betyg</label>
-              <StarRating rating={rating} onRate={setRating} size="lg" />
+          <section className="rounded-2xl border border-[#E4E4E7] bg-white p-6 md:p-8">
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-3 border-b border-[#E4E4E7] pb-6">
+              <div><p className="mb-2 text-xs font-extrabold uppercase tracking-[0.2em] text-[#00798C]">Vad tycker läsarna?</p><h2 className="text-3xl font-extrabold tracking-tight">Recensioner <span className="text-xl font-normal text-[#71717A]">{reviews.length}</span></h2></div>
+              <div className="flex items-center gap-2"><StarRating rating={Math.round(Number(avgRating))} size="sm" /><strong>{avgRating}</strong></div>
             </div>
-            <textarea
-              placeholder="Skriv vad du tyckte om boken..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              required
-              className="w-full border border-[#d8d1c6] rounded p-3 text-sm focus:ring-1 focus:ring-[#409D69] outline-none min-h-[100px] mb-4 bg-white"
-            />
-            <button type="submit" className="bg-[#382110] text-white px-6 py-2 rounded text-sm font-bold hover:bg-[#4a2f1a]">
-              Posta recension
-            </button>
-          </form>
-        )}
 
-        <div className="space-y-6">
-          {reviews.map((r) => {
-            const isMyReview = r.username === username;
-            const isCurrentlyEditing = editingReviewId === r.id;
+            {isLoggedIn ? (
+              <form onSubmit={submitReview} className="mb-10 rounded-2xl border border-[#E4E4E7] bg-[#FAFAFA] p-5 sm:p-6">
+                <h3 className="mb-4 text-lg font-extrabold">Skriv en recension</h3>
+                <div className="mb-4"><label className="mb-2 block text-sm font-semibold">Ditt betyg</label><StarRating rating={rating} onRate={setRating} size="lg" /></div>
+                <label htmlFor="review-text" className="sr-only">Din recension</label>
+                <textarea id="review-text" rows={4} placeholder="Vad tyckte du om boken?" value={text} onChange={e => setText(e.target.value)} required className={`${inputClass} mb-4`} />
+                <button type="submit" className={primaryButton}>Posta recension</button>
+              </form>
+            ) : <p className="mb-8 rounded-xl bg-[#FAFAFA] p-5 text-sm text-[#52525B]"><Link to="/register" className="font-semibold text-[#30638E] underline">Skapa konto</Link> för att skriva en recension.</p>}
 
-            return (
-              <div key={r.id} className="border-b border-[#ece8df] last:border-0 pb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-[#382110]">{r.username}</span>
-                    {!isCurrentlyEditing && <StarRating rating={r.rating} size="sm" />}
-                  </div>
-
-                  {isMyReview && isLoggedIn && !isCurrentlyEditing && (
-                    <div className="flex gap-3 text-xs">
-                      <button
-                        onClick={() => {
-                          setEditingReviewId(r.id);
-                          setEditReviewText(r.text);
-                          setEditReviewRating(r.rating);
-                        }}
-                        className="text-[#00635d] hover:underline font-medium"
-                      >
-                        Redigera
-                      </button>
-                      <button onClick={() => handleDeleteReview(r.id)} className="text-red-600 hover:underline font-medium">
-                        Ta bort
-                      </button>
+            <div className="space-y-5">
+              {reviews.length === 0 && <p className="py-6 text-[#71717A]">Inga recensioner än. Bli först med att recensera!</p>}
+              {reviews.map(r => {
+                const isMyReview = isLoggedIn && r.username === username;
+                const isCurrentlyEditing = editingReviewId === r.id;
+                return (
+                  <article key={r.id} className="rounded-2xl border border-[#E4E4E7] p-5 sm:p-6">
+                    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#30638E] font-extrabold text-white">{(r.username || "?").charAt(0).toUpperCase()}</div>
+                        <div><p className="font-bold">{r.username}</p>{!isCurrentlyEditing && <StarRating rating={r.rating} size="sm" />}</div>
+                      </div>
+                      {isMyReview && !isCurrentlyEditing && <div className="flex gap-3 text-sm"><button type="button" className={`font-semibold text-[#30638E] hover:underline ${focusRing}`} onClick={() => { setEditingReviewId(r.id); setEditReviewText(r.text); setEditReviewRating(r.rating); }}>Redigera</button><button type="button" className={`font-semibold text-[#D1495B] hover:underline ${focusRing}`} onClick={() => handleDeleteReview(r.id)}>Ta bort</button></div>}
                     </div>
-                  )}
-                </div>
+                    {isCurrentlyEditing ? (
+                      <div className="space-y-4"><div><p className="mb-2 text-sm font-semibold">Ändra betyg</p><StarRating rating={editReviewRating} onRate={setEditReviewRating} size="sm" /></div><label htmlFor={`review-edit-${r.id}`} className="sr-only">Redigera recension</label><textarea id={`review-edit-${r.id}`} rows={3} className={inputClass} value={editReviewText} onChange={e => setEditReviewText(e.target.value)} /><div className="flex flex-wrap justify-end gap-2"><button type="button" className={secondaryButton} onClick={() => setEditingReviewId(null)}>Avbryt</button><button type="button" className={primaryButton} onClick={() => handleUpdateReview(r.id)}>Spara</button></div></div>
+                    ) : <p className="whitespace-pre-line leading-7 text-[#52525B]">{r.text}</p>}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        </main>
 
-                {isCurrentlyEditing ? (
-                  <div className="bg-white border border-[#d8d1c6] p-3 rounded space-y-3 mt-2">
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Ändra betyg</label>
-                      <StarRating rating={editReviewRating} onRate={setEditReviewRating} size="sm" />
-                    </div>
-                    <textarea
-                      value={editReviewText}
-                      onChange={(e) => setEditReviewText(e.target.value)}
-                      className="w-full border border-[#d8d1c6] p-2 text-sm rounded bg-white outline-none focus:ring-1 focus:ring-[#409D69]"
-                    />
-                    <div className="flex gap-2 justify-end text-xs">
-                      <button onClick={() => setEditingReviewId(null)} className="px-3 py-1.5 border border-gray-300 rounded text-gray-600">
-                        Avbryt
-                      </button>
-                      <button onClick={() => handleUpdateReview(r.id)} className="px-3 py-1.5 bg-[#409D69] text-white rounded font-bold">
-                        Spara
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-700 leading-relaxed italic">"{r.text}"</p>
-                )}
+        <aside className="space-y-5 lg:sticky lg:top-6">
+          <div className="rounded-2xl border border-[#E4E4E7] bg-white p-6">
+            <h2 className="mb-2 text-xl font-extrabold">Din läshylla</h2>
+            <p className="mb-6 text-sm leading-6 text-[#71717A]">Spara boken eller börja läsa direkt.</p>
+            {isLoggedIn ? (
+              <div className="space-y-3">
+                <button type="button" onClick={toggleWantToRead} aria-pressed={isWantToRead} className={`w-full ${isWantToRead ? secondaryButton : primaryButton}`}>{isWantToRead ? "✓ Vill läsa" : "+ Vill läsa"}</button>
+                <button type="button" onClick={startReadingBook} disabled={isReading} className={`w-full ${secondaryButton}`}>{isReading ? "✓ Läser just nu" : "Börja läsa →"}</button>
               </div>
-            );
-          })}
-        </div>
+            ) : <Link to="/register" className={`block text-center ${primaryButton}`}>Skapa konto gratis</Link>}
+          </div>
+          {isOwner && !isEditing && <div className="rounded-2xl border border-[#E4E4E7] bg-white p-6"><h2 className="mb-4 text-lg font-extrabold">Hantera bok</h2><div className="flex flex-col gap-3"><button type="button" className={secondaryButton} onClick={() => { setIsEditing(true); setEditData(book); }}>Redigera bok</button><button type="button" className={`rounded-full border border-[#D1495B]/30 px-5 py-2.5 text-sm font-semibold text-[#D1495B] hover:bg-red-50 ${focusRing}`} onClick={deleteBook}>Ta bort bok</button></div></div>}
+          <div className="overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white"><div className="flex h-20 items-end justify-center gap-1 px-5 pt-4">{spineColors.map((color, i) => <div key={color} style={{ backgroundColor: color, height: 38 + (i % 3) * 12 }} className="w-7 rounded-t-sm" />)}</div><div className="h-2 bg-[#1B1B1F]" /><p className="px-5 py-4 text-center text-sm font-semibold">Varje bok har sin plats.</p></div>
+        </aside>
       </div>
+      <footer className="mt-12 border-t border-[#E4E4E7] py-6 text-center text-sm text-[#71717A]">© 2026 MyReads. Byggd för böcker.</footer>
     </div>
   );
 }
