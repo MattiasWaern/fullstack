@@ -1,4 +1,12 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+
+// Matchar Home.varB-bokryggar.jsx. Samma typsnitt (Bricolage Grotesque) och färger.
+const FONT = "font-['Bricolage_Grotesque',system-ui,sans-serif]";
+
+const focusRing =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#30638E]";
+
+const SPINE_MARK = ['#D1495B', '#EDAE49', '#00798C'];
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -10,73 +18,69 @@ export default function Navbar() {
     navigate("/login");
   }
 
+  // Aktiv länk får en svart understrykning, övriga blir grå
+  const linkClass = ({ isActive }) =>
+    `text-sm font-semibold py-1 border-b-2 transition-colors ${focusRing} ${
+      isActive
+        ? 'text-[#1B1B1F] border-[#1B1B1F]'
+        : 'text-[#52525B] border-transparent hover:text-[#1B1B1F]'
+    }`;
+
   return (
-    <nav className="bg-[#f4f1ea] border-b border-[#d8d1c6] sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <span className="text-2xl"></span>
-          <span className="font-['Georgia',_'Times_New_Roman',_serif'] text-2xl font-bold text-[#382110] group-hover:text-[#00635d] transition-colors">
+    <nav className={`bg-[#FAFAFA] border-b border-[#E4E4E7] sticky top-0 z-50 ${FONT}`}>
+      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+
+        {/* Logga: tre små bokryggar */}
+        <Link to="/" className={`flex items-center gap-2.5 rounded-sm ${focusRing}`} aria-label="MyReads, till startsidan">
+          <span className="flex items-end gap-0.5" aria-hidden="true">
+            {SPINE_MARK.map((bg, i) => (
+              <span
+                key={bg}
+                style={{ background: bg, height: 16 + i * 4 }}
+                className="w-1.5 rounded-t-[1px]"
+              />
+            ))}
+          </span>
+          <span className="text-2xl font-extrabold tracking-tight text-[#1B1B1F]">
             MyReads
           </span>
         </Link>
 
-        {/* Navigation Links */}
-        <div className="flex items-center gap-6">
-          <Link
-            to="/"
-            className="text-sm text-[#382110] hover:text-[#00635d] transition-colors font-medium"
-          >
-            Hem
-          </Link>
-
-          <Link
-            to="/my-books"
-            className="text-sm text-[#382110] hover:text-[#00635d] transition-colors"
-          >
-            Mina böcker
-          </Link>
-
-          <Link
-            to="/browse"
-            className="text-sm text-[#382110] hover:text-[#00635d] transition-colors"
-          >
-            Bläddra
-          </Link>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <NavLink to="/" end className={linkClass}>Hem</NavLink>
+          <NavLink to="/my-books" className={linkClass}>Mina böcker</NavLink>
+          <NavLink to="/browse" className={linkClass}>Bläddra</NavLink>
 
           {username ? (
-            <>
-              {/* User Menu */}
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-2 text-sm text-[#382110] hover:text-[#00635d] transition-colors group"
-                >
-                  <div className="w-8 h-8 bg-[#f4f1ea] rounded-full flex items-center justify-center text-[#382110] font-medium text-sm border border-[#d8d1c6] group-hover:border-[#b5a58c] transition-colors">
-                    {username[0]?.toUpperCase()}
-                  </div>
-                  <span className="font-medium">{username}</span>
-                </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/profile"
+                className={`flex items-center gap-2 rounded-full pr-3 text-sm font-semibold text-[#1B1B1F] hover:bg-[#F0F0F2] transition-colors ${focusRing}`}
+              >
+                <span className="w-8 h-8 rounded-full bg-[#1B1B1F] text-white flex items-center justify-center text-sm font-semibold">
+                  {username[0]?.toUpperCase()}
+                </span>
+                {username}
+              </Link>
 
-                <button
-                  onClick={logout}
-                  className="text-sm text-[#767676] hover:text-[#382110] transition-colors px-3 py-1.5 rounded-sm hover:bg-[#ede6d6]"
-                >
-                  Logga ut
-                </button>
-              </div>
-            </>
+              <button
+                onClick={logout}
+                className={`text-sm font-semibold text-[#52525B] hover:text-[#1B1B1F] px-4 py-1.5 rounded-full border border-[#D4D4D8] hover:border-[#1B1B1F] transition-colors ${focusRing}`}
+              >
+                Logga ut
+              </button>
+            </div>
           ) : (
             <div className="flex items-center gap-3">
               <Link
                 to="/login"
-                className="text-sm text-[#382110] hover:text-[#00635d] transition-colors font-medium px-3 py-1.5"
+                className={`text-sm font-semibold text-[#1B1B1F] px-4 py-1.5 rounded-full border border-[#D4D4D8] hover:border-[#1B1B1F] transition-colors ${focusRing}`}
               >
                 Logga in
               </Link>
               <Link
                 to="/register"
-                className="text-sm bg-[#409D69] text-white px-4 py-1.5 rounded-sm hover:bg-[#358558] transition-colors font-medium"
+                className={`text-sm font-semibold bg-[#1B1B1F] text-white px-5 py-1.5 rounded-full hover:bg-[#3A3A42] transition-colors ${focusRing}`}
               >
                 Skapa konto
               </Link>

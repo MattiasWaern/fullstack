@@ -6,9 +6,26 @@ import BookSearch from '../components/BookSearch';
 import WantToReadSidebar from '../components/WantToReadSidebar';
 import ReadingTracker from "../components/ReadingTracker";
 
+// Variant B: bokryggar. Alla böcker står som färgade ryggar på en hylla.
+// Typsnitt: Bricolage Grotesque, lägg till i index.html:
+// <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+const FONT = "font-['Bricolage_Grotesque',system-ui,sans-serif]";
+
+const SPINES = [
+  { bg: '#D1495B', fg: '#FFFFFF' },
+  { bg: '#EDAE49', fg: '#1B1B1F' },
+  { bg: '#00798C', fg: '#FFFFFF' },
+  { bg: '#30638E', fg: '#FFFFFF' },
+  { bg: '#66A182', fg: '#10231A' },
+  { bg: '#1B1B1F', fg: '#FFFFFF' },
+];
+
+const splitGenres = (genre) => (genre || '').split(/[, ]+/).filter(Boolean);
+
 export default function Home() {
   const [books, setBooks] = useState([]);
   const [filter, setFilter] = useState('');
+  const [genre, setGenre] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const isLoggedIn = !!localStorage.getItem('token');
 
@@ -27,91 +44,140 @@ export default function Home() {
   };
 
   const filtered = books.filter(b =>
-    b.title.toLowerCase().includes(filter.toLowerCase()) ||
-    b.author.toLowerCase().includes(filter.toLowerCase())
+    (b.title.toLowerCase().includes(filter.toLowerCase()) ||
+      b.author.toLowerCase().includes(filter.toLowerCase())) &&
+    (!genre || splitGenres(b.genre).includes(genre))
   );
 
   const totalReviews = books.reduce((sum, b) => sum + (b.review_count || 0), 0);
+  const genres = [...new Set(books.flatMap(b => splitGenres(b.genre)))].slice(0, 10);
 
-  const topRated = [...books]
-    .filter(b => b.avg_rating)
-    .sort((a, b) => b.avg_rating - a.avg_rating)
-    .slice(0, 3);
+  const focusRing =
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#30638E]";
 
   return (
-    <div className="min-h-screen bg-[#f9f8f4]">
+    <div className={`min-h-screen bg-[#FAFAFA] text-[#1B1B1F] ${FONT}`}>
 
       {/* HERO */}
-      <div className="bg-[#382110] text-white">
-        <div className="max-w-7xl mx-auto px-4 py-16">
-          <div className="max-w-2xl">
-            <h1 className="font-['Georgia',_serif] text-5xl font-bold mb-4 text-[#f4f1ea]">
-              Välkommen till MyReads
-            </h1>
-            <p className="text-[#d4c5a9] text-xl mb-8 leading-relaxed">
-              Upptäck böcker, dela recensioner & håll koll på vad du har läst
-            </p>
+      <header className="border-b border-[#E4E4E7]">
+        <div className="max-w-7xl mx-auto px-4 pt-14">
+          <div className="flex flex-wrap items-end justify-between gap-6 mb-10">
+            <div className="max-w-xl">
+              <h1 className="text-5xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-4">
+                Hela biblioteket, på en hylla
+              </h1>
+              <p className="text-lg text-[#52525B] leading-relaxed">
+                Klicka på en rygg för att läsa recensionerna. {books.length} böcker och {totalReviews} recensioner hittills.
+              </p>
+            </div>
+
             {isLoggedIn ? (
               <button
                 onClick={() => setShowAdd(!showAdd)}
-                className="bg-[#409D69] hover:bg-[#358558] text-white px-8 py-3 rounded-sm font-medium transition-colors text-lg shadow-lg"
+                aria-expanded={showAdd}
+                className={`bg-[#1B1B1F] hover:bg-[#3A3A42] text-white px-7 py-3 rounded-full font-semibold transition-colors ${focusRing}`}
               >
-                {showAdd ? '✕ Stäng' : '+ Lägg till en bok'}
+                {showAdd ? 'Stäng' : 'Lägg till en bok'}
               </button>
             ) : (
               <Link
                 to="/register"
-                className="bg-[#409D69] hover:bg-[#358558] text-white px-8 py-3 rounded-sm font-medium transition-colors text-lg inline-block"
+                className={`bg-[#1B1B1F] hover:bg-[#3A3A42] text-white px-7 py-3 rounded-full font-semibold transition-colors ${focusRing}`}
               >
                 Skapa konto gratis
               </Link>
             )}
           </div>
+
+          {/* RYGGARNA */}
+          <nav aria-label="Böcker som bokryggar">
+            {filtered.length > 0 ? (
+              <ul className="flex items-end gap-1.5 overflow-x-auto pt-4 pb-0 [scrollbar-width:thin]">
+                {filtered.slice(0, 40).map((book, i) => {
+                  const c = SPINES[(book.id ?? i) % SPINES.length] || SPINES[0];
+                  const len = book.title.length;
+                  const height = 150 + (len % 5) * 14;
+                  const width = 38 + (len % 3) * 8;
+                  return (
+                    <li key={book.id} className="flex-shrink-0">
+                      <Link
+                        to={`/books/${book.id}`}
+                        title={`${book.title} av ${book.author}`}
+                        aria-label={`${book.title} av ${book.author}`}
+                        style={{ background: c.bg, color: c.fg, height, width, writingMode: 'vertical-rl' }}
+                        className={`flex items-start rounded-t-sm px-2 py-3 text-sm font-semibold transition-transform duration-150 hover:-translate-y-2 ${focusRing}`}
+                      >
+                        <span className="block max-h-full overflow-hidden text-ellipsis whitespace-nowrap">
+                          {book.title}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="py-16 text-[#52525B]">Inga böcker att ställa på hyllan än.</p>
+            )}
+            <div className="h-3 bg-[#1B1B1F]" />
+          </nav>
         </div>
-      </div>
+      </header>
 
       {showAdd && (
-        <div className="max-w-4xl mx-auto -mt-8 px-4 relative z-10">
-          <div className="bg-white rounded-lg shadow-lg p-6 border border-[#d8d1c6]">
-            <h2 className="font-['Georgia',_serif] font-bold text-[#382110] text-xl mb-4">
-              Sök och lägg till böcker
-            </h2>
+        <div className="max-w-4xl mx-auto mt-8 px-4">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-[#E4E4E7]">
+            <h2 className="font-bold text-xl mb-4">Sök och lägg till böcker</h2>
             <BookSearch onSelect={addBook} />
           </div>
         </div>
       )}
 
-      {/* MAIN LAYOUT */}
-      <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8 items-start">
+      {/* HUVUDYTA, sidokolumnen ligger till höger i den här varianten */}
+      <div className="max-w-7xl mx-auto px-4 py-10 flex flex-col lg:flex-row gap-10 items-start">
 
-        {/* VÄNSTER - Want to Read */}
-        <div className="flex-shrink-0">
-          <WantToReadSidebar />
-        </div>
-
-        {/* MITTEN - Lästracker & Bokflöde */}
-        <div className="flex-1 min-w-0 w-full">
-          
-          {/* HÄR INTEGRERAR VI LÄSMÄTAREN PÅ STARTSIDAN */}
+        <main className="flex-1 min-w-0 w-full order-2 lg:order-1">
           <ReadingTracker />
 
-          <div className="flex items-center justify-between mb-6 mt-2">
-            <h2 className="font-['Georgia',_serif] text-2xl font-bold text-[#382110]">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-4 mt-8">
+            <h2 className="text-3xl font-extrabold tracking-tight">
               Alla böcker
-              <span className="text-[#767676] text-lg font-normal ml-2">({filtered.length})</span>
+              <span className="text-[#71717A] text-lg font-normal ml-2">{filtered.length}</span>
             </h2>
-            <input
-              placeholder="Filtrera böcker..."
-              value={filter}
-              onChange={e => setFilter(e.target.value)}
-              className="border border-[#d8d1c6] rounded-sm px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#409D69] bg-white w-48 md:w-64"
-            />
+            <div>
+              <label htmlFor="book-filter" className="sr-only">Filtrera böcker på titel eller författare</label>
+              <input
+                id="book-filter"
+                placeholder="Sök titel eller författare"
+                value={filter}
+                onChange={e => setFilter(e.target.value)}
+                className="border border-[#D4D4D8] rounded-full px-5 py-2 text-sm bg-white w-60 md:w-72 focus:outline-none focus:ring-2 focus:ring-[#30638E]"
+              />
+            </div>
           </div>
 
+          {genres.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-8" role="group" aria-label="Filtrera på genre">
+              {['', ...genres].map(g => (
+                <button
+                  key={g || 'alla'}
+                  onClick={() => setGenre(g === genre ? '' : g)}
+                  aria-pressed={genre === g}
+                  className={`text-sm px-4 py-1.5 rounded-full border transition-colors ${focusRing} ${
+                    genre === g
+                      ? 'bg-[#1B1B1F] text-white border-[#1B1B1F]'
+                      : 'bg-white border-[#D4D4D8] hover:border-[#1B1B1F]'
+                  }`}
+                >
+                  {g || 'Alla'}
+                </button>
+              ))}
+            </div>
+          )}
+
           {filtered.length === 0 && (
-            <div className="text-center py-16">
-              <div className="text-6xl mb-4">📚</div>
-              <p className="text-xl text-[#382110] font-medium">Inga böcker hittades</p>
+            <div className="py-16">
+              <p className="text-xl font-semibold">Inga böcker matchar</p>
+              <p className="text-[#71717A] mt-1">Ändra sökningen eller välj en annan genre.</p>
             </div>
           )}
 
@@ -120,79 +186,15 @@ export default function Home() {
               <BookCard key={book.id} book={book} onDelete={handleDeleteFromList} />
             ))}
           </div>
-        </div>
+        </main>
 
-        {/* HÖGER - Stats & Topp */}
-        <div style={{ width: '260px' }} className="flex-shrink-0 flex flex-col gap-4 w-full lg:w-auto">
-
-          <div className="bg-white rounded-lg border border-[#d8d1c6] p-4 shadow-sm">
-            <h3 className="font-['Georgia',_serif] font-bold text-[#382110] mb-3 border-b pb-2">Statistik</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-[#555]">Böcker:</span>
-                <span className="font-bold">{books.length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[#555]">Recensioner:</span>
-                <span className="font-bold">{totalReviews}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg border border-[#d8d1c6] shadow-sm">
-            <div className="p-4 border-b border-[#f0ece3]">
-              <h3 className="font-['Georgia',_serif] font-bold text-[#382110]">Högst betyg</h3>
-            </div>
-            <div className="p-4 flex flex-col gap-4">
-              {topRated.length > 0 ? topRated.map((book, index) => (
-                <Link
-                  key={book.id}
-                  to={`/books/${book.id}`}
-                  className="flex items-center gap-3 group hover:bg-[#f9f8f4] p-2 rounded-md transition-all -mx-2"
-                >
-                  <div className="relative flex-shrink-0">
-                    {index === 0 && (
-                      <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#e8871a] rounded-full flex items-center justify-center text-white text-xs z-10">
-                        🏆
-                      </span>
-                    )}
-                    <img
-                      src={book.cover_url || 'https://via.placeholder.com/48x72'}
-                      alt={book.title}
-                      className="w-10 h-14 object-cover rounded-sm shadow-sm border border-[#e8e4d9]"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#382110] group-hover:text-[#00635d] truncate">{book.title}</p>
-                    <p className="text-xs text-[#767676] truncate">{book.author}</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <span className="text-[#e8871a] text-xs">{'★'.repeat(Math.round(book.avg_rating))}</span>
-                      <span className="text-[11px] text-[#767676] font-bold">{book.avg_rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </Link>
-              )) : (
-                <p className="text-sm text-[#767676] text-center py-4 italic">Inga betyg än</p>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg border border-[#d8d1c6] p-3 shadow-sm">
-            <h3 className="font-['Georgia',_serif] text-xs font-bold text-[#382110] uppercase tracking-wider mb-3">Mina Genrer</h3>
-            <div className="flex flex-wrap gap-2">
-              {[...new Set(books.map(b => b.genre).filter(Boolean).flatMap(g => g.split(/[, ]+/)))].slice(0, 10).map((g, i) => (
-                <span key={i} className="bg-[#f4f1ea] text-[#382110] text-[10px] font-bold px-2 py-1 rounded border border-[#d8d1c6]">
-                  {g}
-                </span>
-              ))}
-            </div>
-          </div>
-
-        </div>
+        <aside className="flex-shrink-0 w-full lg:w-auto order-1 lg:order-2">
+          <WantToReadSidebar />
+        </aside>
       </div>
 
-      <footer className="bg-[#f4f1ea] border-t border-[#d8d1c6] mt-16 py-6 text-center text-sm text-[#767676]">
-        © 2026 MyReads, Byggd för böcker 📚 xd
+      <footer className="border-t border-[#E4E4E7] mt-12 py-6 text-center text-sm text-[#71717A]">
+        © 2026 MyReads. Byggd för böcker.
       </footer>
     </div>
   );
