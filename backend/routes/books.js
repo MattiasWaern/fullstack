@@ -1,20 +1,232 @@
-const router=require('express').Router();
-const db=require('../database');const requireAuth=require('../middleware/auth');
-const run=(fn)=>async(req,res)=>{try{await fn(req,res)}catch(e){console.error(e);if(e.code==='23505')return res.status(400).json({error:'En bok med detta ISBN finns redan'});if(e.code==='23503')return res.status(404).json({error:'Boken eller användaren hittades inte'});res.status(500).json({error:'Databasfel'});}};
-const validId=v=>Number.isSafeInteger(Number(v))&&Number(v)>0;
-const fields=['title','author','description','cover_url','genre','page_count','release_year','publisher','isbn'];
-const values=b=>fields.map(k=>b[k]??null);
-router.get('/',run(async(req,res)=>{const {rows}=await db.query(`SELECT books.*,users.username AS created_by_username,AVG(reviews.rating)::float AS avg_rating,COUNT(reviews.id)::integer AS review_count FROM books LEFT JOIN users ON books.created_by=users.id LEFT JOIN reviews ON books.id=reviews.book_id GROUP BY books.id,users.username ORDER BY books.created_at DESC`);res.json(rows)}));
-router.get('/search',run(async(req,res)=>{const q=req.query.q;if(typeof q!=='string'||!q.trim())return res.status(400).json({error:'Sökterm saknas'});const {rows}=await db.query('SELECT * FROM books WHERE title ILIKE $1 OR author ILIKE $1 OR isbn=$2',[`%${q}%`,q]);res.json(rows)}));
-router.get('/my/want-to-read',requireAuth,run(async(req,res)=>{const {rows}=await db.query('SELECT books.* FROM books JOIN want_to_read ON books.id=want_to_read.book_id WHERE want_to_read.user_id=$1 ORDER BY want_to_read.created_at DESC',[req.user.id]);res.json(rows)}));
-router.get('/my/reading-progress',requireAuth,run(async(req,res)=>{const {rows}=await db.query('SELECT reading_progress.current_page,reading_progress.book_id,books.title,books.author,books.cover_url,books.page_count FROM reading_progress JOIN books ON reading_progress.book_id=books.id WHERE reading_progress.user_id=$1 ORDER BY reading_progress.updated_at DESC',[req.user.id]);res.json(rows)}));
-router.post('/:id/progress',requireAuth,run(async(req,res)=>{if(!validId(req.params.id))return res.status(400).json({error:'Ogiltigt bok-ID'});const page=req.body?.current_page;if(!Number.isInteger(page)||page<0)return res.status(400).json({error:'current_page måste vara ett icke-negativt heltal'});const {rows}=await db.query('SELECT page_count FROM books WHERE id=$1',[req.params.id]);if(!rows.length)return res.status(404).json({error:'Boken hittades inte'});if(rows[0].page_count!=null&&page>rows[0].page_count)return res.status(400).json({error:`Boken har bara ${rows[0].page_count} sidor!`});await db.query('INSERT INTO reading_progress(user_id,book_id,current_page,updated_at) VALUES($1,$2,$3,CURRENT_TIMESTAMP) ON CONFLICT(user_id,book_id) DO UPDATE SET current_page=EXCLUDED.current_page,updated_at=CURRENT_TIMESTAMP',[req.user.id,req.params.id,page]);res.json({message:'Framsteg sparade',current_page:page})}));
-router.get('/:id',run(async(req,res)=>{if(!validId(req.params.id))return res.status(400).json({error:'Ogiltigt bok-ID'});const {rows}=await db.query('SELECT books.*,users.username AS created_by_username FROM books LEFT JOIN users ON books.created_by=users.id WHERE books.id=$1',[req.params.id]);if(!rows.length)return res.status(404).json({error:'Boken hittades inte'});res.json(rows[0])}));
-router.post('/',requireAuth,run(async(req,res)=>{const b=req.body||{};if(!b.title||!b.author)return res.status(400).json({error:'Titel och författare krävs'});const {rows}=await db.query(`INSERT INTO books(${fields.join(',')},created_by) VALUES(${fields.map((_,i)=>'$'+(i+1)).join(',')},$10) RETURNING *`,[...values(b),req.user.id]);res.status(201).json(rows[0])}));
-router.post('/:id/want-to-read',requireAuth,run(async(req,res)=>{if(!validId(req.params.id))return res.status(400).json({error:'Ogiltigt bok-ID'});await db.query('INSERT INTO want_to_read(user_id,book_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[req.user.id,req.params.id]);res.json({message:'Tillagd i din läslista'})}));
-router.delete('/:id/want-to-read',requireAuth,run(async(req,res)=>{if(!validId(req.params.id))return res.status(400).json({error:'Ogiltigt bok-ID'});await db.query('DELETE FROM want_to_read WHERE user_id=$1 AND book_id=$2',[req.user.id,req.params.id]);res.json({message:'Borttagen från din läslista'})}));
-router.get('/:id/want-to-read-status',requireAuth,run(async(req,res)=>{if(!validId(req.params.id))return res.status(400).json({error:'Ogiltigt bok-ID'});const {rows}=await db.query('SELECT 1 FROM want_to_read WHERE user_id=$1 AND book_id=$2',[req.user.id,req.params.id]);res.json({isWantToRead:rows.length>0})}));
-router.put('/:id',requireAuth,run(async(req,res)=>{if(!validId(req.params.id))return res.status(400).json({error:'Ogiltigt bok-ID'});const {rows:found}=await db.query('SELECT created_by FROM books WHERE id=$1',[req.params.id]);if(!found.length)return res.status(404).json({error:'Boken hittades inte'});if(found[0].created_by!==req.user.id)return res.status(403).json({error:'Du kan bara redigera dina egna böcker'});const b=req.body||{};if(!b.title||!b.author)return res.status(400).json({error:'Titel och författare krävs'});await db.query(`UPDATE books SET ${fields.map((f,i)=>f+'=$'+(i+1)).join(',')} WHERE id=$10`,[...values(b),req.params.id]);res.json({message:'Boken uppdaterad'})}));
-router.delete('/:id',requireAuth,run(async(req,res)=>{if(!validId(req.params.id))return res.status(400).json({error:'Ogiltigt bok-ID'});const {rows:found}=await db.query('SELECT created_by FROM books WHERE id=$1',[req.params.id]);if(!found.length)return res.status(404).json({error:'Boken hittades inte'});if(found[0].created_by!==req.user.id)return res.status(403).json({error:'Du kan bara ta bort dina egna böcker'});const result=await db.query('DELETE FROM books WHERE id=$1',[req.params.id]);res.json({message:'Boken raderad permanent'})}));
-router.get('/:id/reviews',run(async(req,res)=>{if(!validId(req.params.id))return res.status(400).json({error:'Ogiltigt bok-ID'});const {rows}=await db.query('SELECT reviews.*,users.username FROM reviews JOIN users ON reviews.user_id=users.id WHERE reviews.book_id=$1 ORDER BY reviews.created_at DESC',[req.params.id]);res.json(rows)}));
-module.exports=router;
+const router = require("express").Router();
+const db = require("../database");
+const requireAuth = require("../middleware/auth");
+const run = (fn) => async (req, res) => {
+  try {
+    await fn(req, res);
+  } catch (e) {
+    console.error(e);
+    if (e.code === "23505")
+      return res
+        .status(400)
+        .json({ error: "En bok med detta ISBN finns redan" });
+    if (e.code === "23503")
+      return res
+        .status(404)
+        .json({ error: "Boken eller användaren hittades inte" });
+    res.status(500).json({ error: "Databasfel" });
+  }
+};
+const validId = (v) => Number.isSafeInteger(Number(v)) && Number(v) > 0;
+const fields = [
+  "title",
+  "author",
+  "description",
+  "cover_url",
+  "genre",
+  "page_count",
+  "release_year",
+  "publisher",
+  "isbn",
+];
+const values = (b) => fields.map((k) => b[k] ?? null);
+router.get(
+  "/",
+  run(async (req, res) => {
+    const { rows } = await db.query(
+      `SELECT books.*,users.username AS created_by_username,AVG(reviews.rating)::float AS avg_rating,COUNT(reviews.id)::integer AS review_count FROM books LEFT JOIN users ON books.created_by=users.id LEFT JOIN reviews ON books.id=reviews.book_id GROUP BY books.id,users.username ORDER BY books.created_at DESC`,
+    );
+    res.json(rows);
+  }),
+);
+router.get(
+  "/search",
+  run(async (req, res) => {
+    const q = req.query.q;
+    if (typeof q !== "string" || !q.trim())
+      return res.status(400).json({ error: "Sökterm saknas" });
+    const { rows } = await db.query(
+      "SELECT * FROM books WHERE title ILIKE $1 OR author ILIKE $1 OR isbn=$2",
+      [`%${q}%`, q],
+    );
+    res.json(rows);
+  }),
+);
+router.get(
+  "/my/want-to-read",
+  requireAuth,
+  run(async (req, res) => {
+    const { rows } = await db.query(
+      "SELECT books.* FROM books JOIN want_to_read ON books.id=want_to_read.book_id WHERE want_to_read.user_id=$1 ORDER BY want_to_read.created_at DESC",
+      [req.user.id],
+    );
+    res.json(rows);
+  }),
+);
+router.get(
+  "/my/reading-progress",
+  requireAuth,
+  run(async (req, res) => {
+    const { rows } = await db.query(
+      "SELECT reading_progress.current_page,reading_progress.book_id,books.title,books.author,books.cover_url,books.page_count FROM reading_progress JOIN books ON reading_progress.book_id=books.id WHERE reading_progress.user_id=$1 ORDER BY reading_progress.updated_at DESC",
+      [req.user.id],
+    );
+    res.json(rows);
+  }),
+);
+router.post(
+  "/:id/progress",
+  requireAuth,
+  run(async (req, res) => {
+    if (!validId(req.params.id))
+      return res.status(400).json({ error: "Ogiltigt bok-ID" });
+    const page = req.body?.current_page;
+    if (!Number.isInteger(page) || page < 0)
+      return res
+        .status(400)
+        .json({ error: "current_page måste vara ett icke-negativt heltal" });
+    const { rows } = await db.query(
+      "SELECT page_count FROM books WHERE id=$1",
+      [req.params.id],
+    );
+    if (!rows.length)
+      return res.status(404).json({ error: "Boken hittades inte" });
+    if (rows[0].page_count != null && page > rows[0].page_count)
+      return res
+        .status(400)
+        .json({ error: `Boken har bara ${rows[0].page_count} sidor!` });
+    await db.query(
+      "INSERT INTO reading_progress(user_id,book_id,current_page,updated_at) VALUES($1,$2,$3,CURRENT_TIMESTAMP) ON CONFLICT(user_id,book_id) DO UPDATE SET current_page=EXCLUDED.current_page,updated_at=CURRENT_TIMESTAMP",
+      [req.user.id, req.params.id, page],
+    );
+    res.json({ message: "Framsteg sparade", current_page: page });
+  }),
+);
+router.get(
+  "/:id",
+  run(async (req, res) => {
+    if (!validId(req.params.id))
+      return res.status(400).json({ error: "Ogiltigt bok-ID" });
+    const { rows } = await db.query(
+      "SELECT books.*,users.username AS created_by_username FROM books LEFT JOIN users ON books.created_by=users.id WHERE books.id=$1",
+      [req.params.id],
+    );
+    if (!rows.length)
+      return res.status(404).json({ error: "Boken hittades inte" });
+    res.json(rows[0]);
+  }),
+);
+router.post(
+  "/",
+  requireAuth,
+  run(async (req, res) => {
+    const b = req.body || {};
+    if (!b.title || !b.author)
+      return res.status(400).json({ error: "Titel och författare krävs" });
+    const { rows } = await db.query(
+      `INSERT INTO books(${fields.join(",")},created_by) VALUES(${fields.map((_, i) => "$" + (i + 1)).join(",")},$10) RETURNING *`,
+      [...values(b), req.user.id],
+    );
+    res.status(201).json(rows[0]);
+  }),
+);
+router.post(
+  "/:id/want-to-read",
+  requireAuth,
+  run(async (req, res) => {
+    if (!validId(req.params.id))
+      return res.status(400).json({ error: "Ogiltigt bok-ID" });
+    await db.query(
+      "INSERT INTO want_to_read(user_id,book_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
+      [req.user.id, req.params.id],
+    );
+    res.json({ message: "Tillagd i din läslista" });
+  }),
+);
+router.delete(
+  "/:id/want-to-read",
+  requireAuth,
+  run(async (req, res) => {
+    if (!validId(req.params.id))
+      return res.status(400).json({ error: "Ogiltigt bok-ID" });
+    await db.query("DELETE FROM want_to_read WHERE user_id=$1 AND book_id=$2", [
+      req.user.id,
+      req.params.id,
+    ]);
+    res.json({ message: "Borttagen från din läslista" });
+  }),
+);
+router.get(
+  "/:id/want-to-read-status",
+  requireAuth,
+  run(async (req, res) => {
+    if (!validId(req.params.id))
+      return res.status(400).json({ error: "Ogiltigt bok-ID" });
+    const { rows } = await db.query(
+      "SELECT 1 FROM want_to_read WHERE user_id=$1 AND book_id=$2",
+      [req.user.id, req.params.id],
+    );
+    res.json({ isWantToRead: rows.length > 0 });
+  }),
+);
+router.put(
+  "/:id",
+  requireAuth,
+  run(async (req, res) => {
+    if (!validId(req.params.id))
+      return res.status(400).json({ error: "Ogiltigt bok-ID" });
+    const { rows: found } = await db.query(
+      "SELECT created_by FROM books WHERE id=$1",
+      [req.params.id],
+    );
+    if (!found.length)
+      return res.status(404).json({ error: "Boken hittades inte" });
+    if (found[0].created_by !== req.user.id)
+      return res
+        .status(403)
+        .json({ error: "Du kan bara redigera dina egna böcker" });
+    const b = req.body || {};
+    if (!b.title || !b.author)
+      return res.status(400).json({ error: "Titel och författare krävs" });
+    await db.query(
+      `UPDATE books SET ${fields.map((f, i) => f + "=$" + (i + 1)).join(",")} WHERE id=$10`,
+      [...values(b), req.params.id],
+    );
+    res.json({ message: "Boken uppdaterad" });
+  }),
+);
+router.delete(
+  "/:id",
+  requireAuth,
+  run(async (req, res) => {
+    if (!validId(req.params.id))
+      return res.status(400).json({ error: "Ogiltigt bok-ID" });
+    const { rows: found } = await db.query(
+      "SELECT created_by FROM books WHERE id=$1",
+      [req.params.id],
+    );
+    if (!found.length)
+      return res.status(404).json({ error: "Boken hittades inte" });
+    if (found[0].created_by !== req.user.id)
+      return res
+        .status(403)
+        .json({ error: "Du kan bara ta bort dina egna böcker" });
+    const result = await db.query("DELETE FROM books WHERE id=$1", [
+      req.params.id,
+    ]);
+    res.json({ message: "Boken raderad permanent" });
+  }),
+);
+router.get(
+  "/:id/reviews",
+  run(async (req, res) => {
+    if (!validId(req.params.id))
+      return res.status(400).json({ error: "Ogiltigt bok-ID" });
+    const { rows } = await db.query(
+      "SELECT reviews.*,users.username FROM reviews JOIN users ON reviews.user_id=users.id WHERE reviews.book_id=$1 ORDER BY reviews.created_at DESC",
+      [req.params.id],
+    );
+    res.json(rows);
+  }),
+);
+module.exports = router;
