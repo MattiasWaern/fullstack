@@ -249,7 +249,7 @@ export default function AddManualBook({
                   />
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center px-3 text-center text-white">
-                    <span className="mb-3 text-2xl">📖</span>
+                    <span className="mb-3 text-2xl"></span>
                     <p className="line-clamp-4 text-xs font-extrabold">
                       {formData.title || "Din boktitel"}
                     </p>
