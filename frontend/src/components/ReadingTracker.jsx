@@ -2,66 +2,112 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api";
+import "../styles/ReadingTracker.css";
 
 export default function ReadingTracker() {
   const [readingList, setReadingList] = useState([]);
-  const [updatePages, setUpdatePages] = useState({});
+  const [draftPages, setDraftPages] = useState({});
   const [updating, setUpdating] = useState({});
   const [messages, setMessages] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const isLoggedIn = Boolean(localStorage.getItem("token"));
 
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) {
+      setLoading(false);
+      return;
+    }
 
     let active = true;
 
-    api.get("/books/my/reading-progress")
-      .then(({ data }) => {
-        if (active) setReadingList(data);
-      })
-      .catch((error) => {
+    async function loadReadingList() {
+      try {
+        const { data } = await api.get(
+          "/books/my/reading-progress"
+        );
+
+        if (active) {
+          setReadingList(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
         console.error("Kunde inte hämta lässtatus:", error);
-      });
+
+        if (active) {
+          setLoadError("Kunde inte hämta dina läsframsteg.");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadReadingList();
 
     return () => {
       active = false;
     };
   }, [isLoggedIn]);
 
-  async function handlePageUpdate(bookId, totalPages) {
-    const value = updatePages[bookId];
+  function getBookProgress(book) {
+    const currentPage = Number(book.current_page) || 0;
+    const totalPages = Number(book.page_count);
+    const hasPageCount =
+      Number.isFinite(totalPages) && totalPages > 0;
 
-    if (value === undefined || value === "") {
-      setMessages((prev) => ({
-        ...prev,
-        [bookId]: {
-          type: "error",
-          text: "Ange ett sidnummer.",
-        },
-      }));
-      return;
-    }
+    const percentage = hasPageCount
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round((currentPage / totalPages) * 100)
+          )
+        )
+      : null;
 
-    const newPage = Number(value);
+    return {
+      currentPage,
+      totalPages,
+      hasPageCount,
+      percentage,
+      remainingPages: hasPageCount
+        ? Math.max(0, totalPages - currentPage)
+        : null,
+    };
+  }
+
+  function setMessage(bookId, type, text) {
+    setMessages((prev) => ({
+      ...prev,
+      [bookId]: { type, text },
+    }));
+  }
+
+  async function saveProgress(book, page) {
+    const {
+      totalPages,
+      hasPageCount,
+    } = getBookProgress(book);
+
+    const bookId = book.book_id;
+    const newPage = Number(page);
 
     if (
-      !Number.isInteger(newPage) ||
+      !Number.isSafeInteger(newPage) ||
       newPage < 0 ||
-      (totalPages !== null && newPage > totalPages)
+      (hasPageCount && newPage > totalPages)
     ) {
-      setMessages((prev) => ({
-        ...prev,
-        [bookId]: {
-          type: "error",
-          text:
-            totalPages !== null
-              ? `Ange en sida mellan 0 och ${totalPages}.`
-              : "Ange ett giltigt sidnummer.",
-        },
-      }));
+      setMessage(
+        bookId,
+        "error",
+        hasPageCount
+          ? `Ange en sida mellan 0 och ${totalPages}.`
+          : "Ange ett giltigt sidnummer."
+      );
       return;
     }
+
+    if (updating[bookId]) return;
 
     setUpdating((prev) => ({
       ...prev,
@@ -74,40 +120,45 @@ export default function ReadingTracker() {
     }));
 
     try {
-      await api.post(`/books/${bookId}/progress`, {
-        current_page: newPage,
-      });
+      const { data } = await api.post(
+        `/books/${bookId}/progress`,
+        { current_page: newPage }
+      );
+
+      const savedPage = Number(data.current_page);
 
       setReadingList((prev) =>
         prev.map((item) =>
-          item.book_id === bookId
-            ? { ...item, current_page: newPage }
+          String(item.book_id) === String(bookId)
+            ? {
+                ...item,
+                current_page: Number.isFinite(savedPage)
+                  ? savedPage
+                  : newPage,
+              }
             : item
         )
       );
 
-      setUpdatePages((prev) => ({
+      setDraftPages((prev) => ({
         ...prev,
         [bookId]: "",
       }));
 
-      setMessages((prev) => ({
-        ...prev,
-        [bookId]: {
-          type: "success",
-          text: "Läsframsteg uppdaterat!",
-        },
-      }));
+      setMessage(
+        bookId,
+        "success",
+        hasPageCount && newPage === totalPages
+          ? "Du har nått sista sidan!"
+          : "Läsframstegen har sparats."
+      );
     } catch (error) {
-      setMessages((prev) => ({
-        ...prev,
-        [bookId]: {
-          type: "error",
-          text:
-            error.response?.data?.error ||
-            "Kunde inte uppdatera lässtatus.",
-        },
-      }));
+      setMessage(
+        bookId,
+        "error",
+        error.response?.data?.error ||
+          "Kunde inte spara dina läsframsteg."
+      );
     } finally {
       setUpdating((prev) => ({
         ...prev,
@@ -116,156 +167,247 @@ export default function ReadingTracker() {
     }
   }
 
-  if (!isLoggedIn || readingList.length === 0) {
-    return null;
+  function addPages(book, amount) {
+    const {
+      currentPage,
+      totalPages,
+      hasPageCount,
+    } = getBookProgress(book);
+
+    const nextPage = hasPageCount
+      ? Math.min(totalPages, currentPage + amount)
+      : currentPage + amount;
+
+    if (nextPage === currentPage) return;
+
+    saveProgress(book, nextPage);
+  }
+
+  if (!isLoggedIn) return null;
+
+  if (loading) {
+    return (
+      <div className="rt-feedback" role="status">
+        Hämtar dina läsframsteg...
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="rt-feedback rt-feedback-error" role="alert">
+        {loadError}
+      </div>
+    );
+  }
+
+  if (readingList.length === 0) {
+    return (
+      <div className="rt-empty">
+        <span className="rt-eyebrow">DIN LÄSRESA</span>
+        <h3>Vilken bok blir din nästa?</h3>
+        <p>
+          När du börjar läsa en bok kommer dina
+          framsteg att visas här.
+        </p>
+        <Link to="/#bibliotek">
+          Utforska biblioteket <span aria-hidden="true">↗</span>
+        </Link>
+      </div>
+    );
   }
 
   return (
-    <section className="bh-reading-list">
+    <div className="rt-list">
       {readingList.map((book) => {
-        const totalPages = Number(book.page_count);
-        const currentPage = Number(book.current_page) || 0;
+        const {
+          currentPage,
+          totalPages,
+          hasPageCount,
+          percentage,
+          remainingPages,
+        } = getBookProgress(book);
 
-        const hasPageCount =
-          Number.isFinite(totalPages) && totalPages > 0;
-
-        const percentage = hasPageCount
-          ? Math.min(
-              100,
-              Math.max(
-                0,
-                Math.round((currentPage / totalPages) * 100)
-              )
-            )
-          : null;
-
-        const message = messages[book.book_id];
+        const bookId = book.book_id;
+        const isUpdating = Boolean(updating[bookId]);
+        const message = messages[bookId];
+        const isComplete =
+          hasPageCount && currentPage >= totalPages;
 
         return (
-          <article
-            className="bh-reading-card"
-            key={book.book_id}
-          >
+          <article className="rt-card" key={bookId}>
             <Link
-              to={`/books/${book.book_id}`}
-              className="bh-reading-cover"
+              to={`/books/${bookId}`}
+              className="rt-cover"
+              aria-label={`Visa ${book.title}`}
             >
               {book.cover_url ? (
                 <img
                   src={book.cover_url}
                   alt={`Omslag till ${book.title}`}
+                  loading="lazy"
                 />
               ) : (
-                <div className="bh-cover-placeholder">
+                <div className="rt-cover-placeholder">
                   {book.title}
                 </div>
               )}
             </Link>
 
-            <div className="bh-reading-content">
-              <div className="bh-reading-top">
-                <div>
-                  <span className="bh-reading-label">
-                    LÄSER JUST NU
+            <div className="rt-content">
+              <div className="rt-top">
+                <div className="rt-book-info">
+                  <span className="rt-eyebrow">
+                    {isComplete
+                      ? "SISTA SIDAN NÅDD"
+                      : "LÄSER JUST NU"}
                   </span>
 
                   <Link
-                    to={`/books/${book.book_id}`}
-                    className="bh-reading-title"
+                    to={`/books/${bookId}`}
+                    className="rt-title"
                   >
                     {book.title}
                   </Link>
 
-                  <p className="bh-reading-author">
+                  <p className="rt-author">
                     {book.author}
                   </p>
                 </div>
 
-                {percentage !== null && (
-                  <span className="bh-reading-percentage">
-                    {percentage}%
-                  </span>
-                )}
+                <div className="rt-percentage">
+                  {percentage !== null ? (
+                    <>
+                      <strong>{percentage}%</strong>
+                      <span>klart</span>
+                    </>
+                  ) : (
+                    <span>Pågående</span>
+                  )}
+                </div>
               </div>
 
-              <div className="bh-progress-details">
+              <div className="rt-progress-info">
                 <span>
-                  Sida {currentPage}
-                  {hasPageCount ? ` av ${totalPages}` : ""}
+                  Sida <strong>{currentPage}</strong>
+                  {hasPageCount && ` av ${totalPages}`}
                 </span>
 
                 <span>
-                  {percentage === 100
-                    ? "Färdigläst"
-                    : "Din läsresa"}
+                  {isComplete
+                    ? "Sista sidan nådd"
+                    : remainingPages !== null
+                      ? `${remainingPages} sidor kvar`
+                      : "Sidantal saknas"}
                 </span>
               </div>
 
               <div
-                className="bh-progress-track"
-                role={percentage !== null ? "progressbar" : undefined}
+                className="rt-progress-track"
+                role={hasPageCount ? "progressbar" : undefined}
                 aria-label={`Läsframsteg för ${book.title}`}
                 aria-valuenow={percentage ?? undefined}
-                aria-valuemin={percentage !== null ? 0 : undefined}
-                aria-valuemax={percentage !== null ? 100 : undefined}
+                aria-valuemin={hasPageCount ? 0 : undefined}
+                aria-valuemax={hasPageCount ? 100 : undefined}
               >
                 <div
-                  className="bh-progress-fill"
+                  className="rt-progress-fill"
                   style={{ width: `${percentage ?? 0}%` }}
                 />
               </div>
 
-              <form
-                className="bh-reading-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
+              <div className="rt-controls">
+                <form
+                  className="rt-page-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
 
-                  handlePageUpdate(
-                    book.book_id,
-                    hasPageCount ? totalPages : null
-                  );
-                }}
-              >
-                <label htmlFor={`page-${book.book_id}`}>
-                  Uppdatera sidnummer
-                </label>
+                    const value = draftPages[bookId];
 
-                <div className="bh-reading-actions">
-                  <input
-                    id={`page-${book.book_id}`}
-                    type="number"
-                    min="0"
-                    max={hasPageCount ? totalPages : undefined}
-                    step="1"
-                    placeholder="Sidnummer"
-                    value={updatePages[book.book_id] ?? ""}
-                    onChange={(event) => {
-                      setUpdatePages((prev) => ({
-                        ...prev,
-                        [book.book_id]: event.target.value,
-                      }));
+                    if (value === "" || value === undefined) {
+                      setMessage(
+                        bookId,
+                        "error",
+                        "Ange ett sidnummer."
+                      );
+                      return;
+                    }
 
-                      setMessages((prev) => ({
-                        ...prev,
-                        [book.book_id]: null,
-                      }));
-                    }}
-                  />
+                    saveProgress(book, value);
+                  }}
+                >
+                  <label htmlFor={`rt-page-${bookId}`}>
+                    Uppdatera sida
+                  </label>
 
-                  <button
-                    type="submit"
-                    disabled={updating[book.book_id]}
-                  >
-                    {updating[book.book_id]
-                      ? "Sparar..."
-                      : "Uppdatera"}
-                  </button>
+                  <div className="rt-page-input-row">
+                    <input
+                      id={`rt-page-${bookId}`}
+                      type="number"
+                      min="0"
+                      max={hasPageCount ? totalPages : undefined}
+                      step="1"
+                      placeholder="Sidnummer"
+                      value={draftPages[bookId] ?? ""}
+                      disabled={isUpdating}
+                      onChange={(event) => {
+                        setDraftPages((prev) => ({
+                          ...prev,
+                          [bookId]: event.target.value,
+                        }));
+
+                        setMessages((prev) => ({
+                          ...prev,
+                          [bookId]: null,
+                        }));
+                      }}
+                    />
+
+                    <button
+                      type="submit"
+                      className="rt-save-button"
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? "Sparar..." : "Spara"}
+                    </button>
+                  </div>
+                </form>
+
+                <div className="rt-quick-actions">
+                  <span>Snabbuppdatering</span>
+
+                  <div className="rt-quick-buttons">
+                    {[1, 10, 25].map((amount) => (
+                      <button
+                        type="button"
+                        key={amount}
+                        disabled={isUpdating || isComplete}
+                        onClick={() => addPages(book, amount)}
+                        aria-label={`Lägg till ${amount} sidor för ${book.title}`}
+                      >
+                        +{amount}
+                      </button>
+                    ))}
+
+                    {hasPageCount && (
+                      <button
+                        type="button"
+                        className="rt-finish-button"
+                        disabled={isUpdating || isComplete}
+                        onClick={() =>
+                          saveProgress(book, totalPages)
+                        }
+                      >
+                        {isComplete ? "Klart ✓" : "Sista sidan ✓"}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </form>
+              </div>
 
               {message && (
                 <p
-                  className={`bh-reading-message ${message.type}`}
+                  className={`rt-message rt-${message.type}`}
                   role="status"
                 >
                   {message.text}
@@ -275,6 +417,6 @@ export default function ReadingTracker() {
           </article>
         );
       })}
-    </section>
+    </div>
   );
 }
