@@ -1,29 +1,28 @@
 
 import { useState } from "react";
+import "../styles/BookForms.css";
 
-const FONT = "font-['Bricolage_Grotesque',system-ui,sans-serif]";
-
-const inputClass =
-  "w-full rounded-xl border border-[#D4D4D8] bg-white px-4 py-3 text-sm text-[#1B1B1F] outline-none transition-all placeholder:text-[#A1A1AA] focus:border-[#30638E] focus:ring-2 focus:ring-[#30638E]/20";
-
-const labelClass =
-  "mb-2 block text-xs font-bold text-[#52525B]";
+const initialData = {
+  title: "",
+  author: "",
+  genre: "",
+  isbn: "",
+  page_count: "",
+  release_year: "",
+  publisher: "",
+  cover_url: "",
+  description: "",
+};
 
 export default function AddManualBook({
   onSave,
   onCancel,
   initialTitle = "",
+  saving = false,
 }) {
   const [formData, setFormData] = useState({
+    ...initialData,
     title: initialTitle,
-    author: "",
-    description: "",
-    cover_url: "",
-    genre: "",
-    page_count: "",
-    release_year: "",
-    publisher: "",
-    isbn: "",
   });
 
   const [imageError, setImageError] = useState(false);
@@ -35,13 +34,25 @@ export default function AddManualBook({
     }));
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    if (saving) return;
+
+    const title = formData.title.trim();
+    const author = formData.author.trim();
+
+    if (!title || !author) return;
 
     onSave({
       ...formData,
-      title: formData.title.trim(),
-      author: formData.author.trim(),
+      title,
+      author,
+      genre: formData.genre.trim(),
+      isbn: formData.isbn.trim(),
+      publisher: formData.publisher.trim(),
+      description: formData.description.trim(),
+      cover_url: formData.cover_url.trim(),
       page_count: formData.page_count
         ? Number(formData.page_count)
         : null,
@@ -51,306 +62,221 @@ export default function AddManualBook({
     });
   }
 
-  const showCover = formData.cover_url.trim() && !imageError;
-
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={`w-full overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white ${FONT}`}
-    >
-      {/* HEADER */}
-      <div className="border-b border-[#E4E4E7] bg-[#FAFAFA] px-6 py-6 sm:px-8">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#00798C]">
-          Lägg till manuellt
-        </p>
-
-        <h2 className="text-2xl font-extrabold tracking-tight text-[#1B1B1F] sm:text-3xl">
-          En ny bok till hyllan.
-        </h2>
-
-        <p className="mt-2 max-w-lg text-sm leading-relaxed text-[#71717A]">
-          Fyll i informationen om din bok. Titel och författare
+    <form className="bf-manual" onSubmit={handleSubmit}>
+      <div className="bf-manual-heading">
+        <span className="bf-eyebrow">DITT BIBLIOTEK</span>
+        <h2>En ny bok till hyllan.</h2>
+        <p>
+          Fyll i det du vet om boken. Titel och författare
           är obligatoriska, resten kan du komplettera senare.
         </p>
       </div>
 
-      <div className="space-y-8 p-6 sm:p-8">
-
-        {/* GRUNDINFORMATION */}
-        <section>
-          <div className="mb-5 flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1B1B1F] text-xs font-bold text-white">
-              01
-            </span>
-
-            <h3 className="text-lg font-extrabold tracking-tight text-[#1B1B1F]">
-              Grundinformation
-            </h3>
+      <div className="bf-manual-content">
+        <section className="bf-form-section">
+          <div className="bf-section-title">
+            <h3>Om boken</h3>
+            <p>Grundläggande information</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <div>
-              <label htmlFor="manual-title" className={labelClass}>
-                Titel <span className="text-[#D1495B]">*</span>
+          <div className="bf-form-grid">
+            <div className="bf-field">
+              <label htmlFor="manual-title">
+                Titel <span>*</span>
               </label>
               <input
                 id="manual-title"
                 required
-                placeholder="T.ex. The Great Gatsby"
                 value={formData.title}
+                placeholder="Bokens titel"
                 onChange={(e) =>
                   updateField("title", e.target.value)
                 }
-                className={inputClass}
               />
             </div>
 
-            <div>
-              <label htmlFor="manual-author" className={labelClass}>
-                Författare <span className="text-[#D1495B]">*</span>
+            <div className="bf-field">
+              <label htmlFor="manual-author">
+                Författare <span>*</span>
               </label>
               <input
                 id="manual-author"
                 required
-                placeholder="T.ex. F. Scott Fitzgerald"
                 value={formData.author}
+                placeholder="Författarens namn"
                 onChange={(e) =>
                   updateField("author", e.target.value)
                 }
-                className={inputClass}
               />
             </div>
 
-            <div>
-              <label htmlFor="manual-genre" className={labelClass}>
-                Genre
-              </label>
+            <div className="bf-field">
+              <label htmlFor="manual-genre">Genre</label>
               <input
                 id="manual-genre"
-                placeholder="T.ex. Roman, Klassiker"
                 value={formData.genre}
+                placeholder="Exempelvis fantasy eller roman"
                 onChange={(e) =>
                   updateField("genre", e.target.value)
                 }
-                className={inputClass}
               />
             </div>
 
-            <div>
-              <label htmlFor="manual-isbn" className={labelClass}>
-                ISBN
-              </label>
+            <div className="bf-field">
+              <label htmlFor="manual-isbn">ISBN</label>
               <input
                 id="manual-isbn"
-                placeholder="978..."
                 value={formData.isbn}
+                placeholder="ISBN-nummer"
                 onChange={(e) =>
                   updateField("isbn", e.target.value)
                 }
-                className={inputClass}
               />
             </div>
           </div>
         </section>
 
-        <div className="h-px bg-[#E4E4E7]" />
-
-        {/* UTGIVNINGSINFORMATION */}
-        <section>
-          <div className="mb-5 flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#30638E] text-xs font-bold text-white">
-              02
-            </span>
-
-            <h3 className="text-lg font-extrabold tracking-tight text-[#1B1B1F]">
-              Utgivningsinformation
-            </h3>
+        <section className="bf-form-section">
+          <div className="bf-section-title">
+            <h3>Utgivning</h3>
+            <p>Lite mer om bokens utgåva</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-            <div>
-              <label htmlFor="manual-pages" className={labelClass}>
-                Antal sidor
-              </label>
+          <div className="bf-form-grid three">
+            <div className="bf-field">
+              <label htmlFor="manual-pages">Antal sidor</label>
               <input
                 id="manual-pages"
                 type="number"
                 min="1"
-                placeholder="T.ex. 320"
+                step="1"
                 value={formData.page_count}
+                placeholder="320"
                 onChange={(e) =>
                   updateField("page_count", e.target.value)
                 }
-                className={inputClass}
               />
             </div>
 
-            <div>
-              <label htmlFor="manual-year" className={labelClass}>
-                Utgivningsår
-              </label>
+            <div className="bf-field">
+              <label htmlFor="manual-year">Utgivningsår</label>
               <input
                 id="manual-year"
                 type="number"
                 min="0"
                 max="2100"
-                placeholder="T.ex. 2024"
+                step="1"
                 value={formData.release_year}
+                placeholder="2024"
                 onChange={(e) =>
                   updateField("release_year", e.target.value)
                 }
-                className={inputClass}
               />
             </div>
 
-            <div>
-              <label htmlFor="manual-publisher" className={labelClass}>
-                Förlag
-              </label>
+            <div className="bf-field">
+              <label htmlFor="manual-publisher">Förlag</label>
               <input
                 id="manual-publisher"
-                placeholder="T.ex. Penguin Books"
                 value={formData.publisher}
+                placeholder="Förlagets namn"
                 onChange={(e) =>
                   updateField("publisher", e.target.value)
                 }
-                className={inputClass}
               />
             </div>
           </div>
         </section>
 
-        <div className="h-px bg-[#E4E4E7]" />
-
-        {/* OMSLAG */}
-        <section>
-          <div className="mb-5 flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#00798C] text-xs font-bold text-white">
-              03
-            </span>
-
-            <h3 className="text-lg font-extrabold tracking-tight text-[#1B1B1F]">
-              Bokomslag
-            </h3>
+        <section className="bf-form-section">
+          <div className="bf-section-title">
+            <h3>Bokomslag</h3>
+            <p>Ge boken en plats på din digitala bokhylla</p>
           </div>
 
-          <div className="flex flex-col gap-5 sm:flex-row">
-            {/* FÖRHANDSVISNING */}
-            <div className="w-32 shrink-0">
-              <div className="relative aspect-[2/3] overflow-hidden rounded-lg border border-[#E4E4E7] bg-[#30638E] shadow-sm">
-                <div className="absolute bottom-0 left-0 top-0 z-10 w-2 bg-[#1B1B1F]/20" />
-
-                {showCover ? (
-                  <img
-                    src={formData.cover_url}
-                    alt="Förhandsvisning av bokomslag"
-                    onError={() => setImageError(true)}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center px-3 text-center text-white">
-                    <span className="mb-3 text-2xl"></span>
-                    <p className="line-clamp-4 text-xs font-extrabold">
-                      {formData.title || "Din boktitel"}
-                    </p>
-                    <p className="mt-2 text-[10px] text-white/70">
-                      {formData.author || "Författare"}
-                    </p>
-                  </div>
-                )}
-              </div>
+          <div className="bf-cover-section">
+            <div className="bf-cover-preview">
+              {formData.cover_url.trim() && !imageError ? (
+                <img
+                  src={formData.cover_url}
+                  alt="Förhandsvisning av bokomslag"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="bf-cover-fallback">
+                  <strong>
+                    {formData.title || "Din boktitel"}
+                  </strong>
+                  <span>
+                    {formData.author || "Författare"}
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div className="flex-1">
-              <label htmlFor="manual-cover" className={labelClass}>
-                URL till bokomslag
+            <div className="bf-field">
+              <label htmlFor="manual-cover">
+                Länk till bokomslag
               </label>
-
               <input
                 id="manual-cover"
                 type="url"
-                placeholder="https://example.com/book-cover.jpg"
                 value={formData.cover_url}
+                placeholder="https://example.com/omslag.jpg"
                 onChange={(e) => {
                   updateField("cover_url", e.target.value);
                   setImageError(false);
                 }}
-                className={inputClass}
               />
-
-              <p className="mt-3 text-xs leading-relaxed text-[#71717A]">
-                Klistra in en bildlänk för att visa bokens omslag.
-                Förhandsvisningen uppdateras automatiskt.
+              <p className="bf-field-help">
+                Klistra in en bildlänk. Förhandsvisningen
+                uppdateras automatiskt.
               </p>
             </div>
           </div>
         </section>
 
-        <div className="h-px bg-[#E4E4E7]" />
-
-        {/* BESKRIVNING */}
-        <section>
-          <div className="mb-5 flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#66A182] text-xs font-bold text-[#10231A]">
-              04
-            </span>
-
-            <h3 className="text-lg font-extrabold tracking-tight text-[#1B1B1F]">
-              Beskrivning
-            </h3>
+        <section className="bf-form-section">
+          <div className="bf-section-title">
+            <h3>Beskrivning</h3>
+            <p>Vad handlar boken om?</p>
           </div>
 
-          <label htmlFor="manual-description" className={labelClass}>
-            Vad handlar boken om?
-          </label>
-
-          <textarea
-            id="manual-description"
-            rows={5}
-            placeholder="Skriv en kort beskrivning av boken..."
-            value={formData.description}
-            onChange={(e) =>
-              updateField("description", e.target.value)
-            }
-            className={`${inputClass} min-h-32 resize-y leading-relaxed`}
-          />
+          <div className="bf-field">
+            <label htmlFor="manual-description">
+              Bokens beskrivning
+            </label>
+            <textarea
+              id="manual-description"
+              rows={5}
+              value={formData.description}
+              placeholder="Skriv en kort beskrivning..."
+              onChange={(e) =>
+                updateField("description", e.target.value)
+              }
+            />
+          </div>
         </section>
       </div>
 
-      {/* FOOTER / KNAPPAR */}
-      <div className="flex flex-col-reverse items-stretch justify-between gap-3 border-t border-[#E4E4E7] bg-[#FAFAFA] px-6 py-5 sm:flex-row sm:items-center sm:px-8">
+      <div className="bf-manual-footer">
         <button
           type="button"
+          className="bf-outline"
           onClick={onCancel}
-          className="rounded-full border border-[#D4D4D8] bg-white px-6 py-3 text-sm font-semibold text-[#52525B] transition-colors hover:border-[#1B1B1F] hover:text-[#1B1B1F]"
+          disabled={saving}
         >
           Avbryt
         </button>
 
         <button
           type="submit"
-          className="rounded-full bg-[#1B1B1F] px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-[#3A3A42] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#30638E]"
+          className="bf-primary"
+          disabled={saving}
         >
-          + Lägg till i biblioteket
+          {saving ? "Sparar..." : "+ Lägg till i biblioteket"}
         </button>
-      </div>
-
-      {/* FÄRGAD BOKHYLLA */}
-      <div className="flex h-1.5">
-        {[
-          "#D1495B",
-          "#EDAE49",
-          "#00798C",
-          "#30638E",
-          "#66A182",
-          "#1B1B1F",
-        ].map((color) => (
-          <div
-            key={color}
-            className="flex-1"
-            style={{ backgroundColor: color }}
-          />
-        ))}
       </div>
     </form>
   );
