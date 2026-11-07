@@ -1,70 +1,237 @@
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from '../api';
+import { Link, useNavigate } from "react-router-dom";
+import api from "../api";
+import "../styles/Login.css";
 
-export default function Login(){
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [mode, setMode] = useState('login'); // login eller register
-    const [error, setError] = useState('');
-    const navigate = useNavigate();
+export default function Login() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState("login");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError('');
+  const navigate = useNavigate();
+  const isLogin = mode === "login";
+
+  function changeMode() {
+    setMode(isLogin ? "register" : "login");
+    setError("");
+    setSuccess("");
+    setPassword("");
+    setShowPassword(false);
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!username.trim() || !password) {
+      setError("Fyll i både användarnamn och lösenord.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const { data } = await api.post(`/auth/${mode}`, { username, password });
-      if (mode === 'login') {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('username', data.username);
-        navigate('/');
+      const { data } = await api.post(`/auth/${mode}`, {
+        username: username.trim(),
+        password,
+      });
+
+      if (isLogin) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("username", data.username);
+        navigate("/");
       } else {
-        setMode('login');
-        setError('Konto skapat! Logga in nu.');
+        setMode("login");
+        setPassword("");
+        setSuccess("Ditt konto är skapat! Du kan nu logga in.");
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Något gick fel');
+      setError(
+        err.response?.data?.error ||
+        "Något gick fel. Försök igen."
+      );
+    } finally {
+      setLoading(false);
     }
   }
 
-    return (
-    <div className="min-h-screen bg-[#f4f1ea] flex items-center justify-center px-4">
-      <div className="bg-white rounded-xl shadow-md p-8 w-full max-w-sm">
-        <h2 className="text-2xl font-bold text-[#382110] mb-6 text-center">
-          {mode === 'login' ? 'Logga in' : 'Skapa konto'}
-        </h2>
+  return (
+    <main className="bh-auth">
+      <section className="bh-auth-editorial">
+        <Link to="/" className="bh-auth-logo">
+          <span className="bh-auth-logo-icon">▤</span>
+          MyReads
+        </Link>
 
-        {error && <p className="text-sm mb-4 text-center" style={{ color: error.includes('skapat') ? 'green' : 'red' }}>{error}</p>}
+        <div className="bh-auth-editorial-content">
+          <span className="bh-auth-overline">
+            ETT HEM FÖR ALLA DINA BERÄTTELSER
+          </span>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            placeholder="Användarnamn"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#382110]"
-          />
-          <input
-            type="password"
-            placeholder="Lösenord"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#382110]"
-          />
-          <button type="submit" className="bg-[#382110] text-white py-2 rounded hover:bg-[#4a2f1a] font-medium">
-            {mode === 'login' ? 'Logga in' : 'Registrera'}
-          </button>
-        </form>
+          <h1>
+            Mellan varje
+            <br />
+            <em>sida</em> finns
+            <br />
+            en ny värld.
+          </h1>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
-          {mode === 'login' ? 'Inget konto? ' : 'Redan konto? '}
-          <button
-            onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-            className="text-[#382110] font-medium hover:underline"
-          >
-            {mode === 'login' ? 'Skapa ett' : 'Logga in'}
-          </button>
-        </p>
-      </div>
-    </div>
+          <p>
+            Samla böckerna du älskar, upptäck nya favoriter
+            och låt din läsresa fortsätta.
+          </p>
+
+          <div className="bh-auth-books" aria-hidden="true">
+            <div className="bh-auth-book book-one">
+              <span>STORIES</span>
+            </div>
+            <div className="bh-auth-book book-two">
+              <span>CHAPTERS</span>
+            </div>
+            <div className="bh-auth-book book-three">
+              <span>MYREADS</span>
+            </div>
+            <div className="bh-auth-book book-four">
+              <span>BOOKS</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bh-auth-editorial-footer">
+          <span>MYREADS</span>
+          <span>Din personliga bokvärld</span>
+        </div>
+      </section>
+
+      <section className="bh-auth-form-section">
+        <div className="bh-auth-form-container">
+          <Link to="/" className="bh-auth-back">
+            ← Tillbaka till startsidan
+          </Link>
+
+          <div className="bh-auth-heading">
+            <span className="bh-auth-eyebrow">
+              {isLogin ? "VÄLKOMMEN TILLBAKA" : "BÖRJA DIN LÄSRESA"}
+            </span>
+
+            <h2>
+              {isLogin ? "Välkommen tillbaka." : "Skapa ditt konto."}
+            </h2>
+
+            <p>
+              {isLogin
+                ? "Logga in för att fortsätta där du slutade."
+                : "Skapa ett konto och börja samla dina läsupplevelser."}
+            </p>
+          </div>
+
+          {error && (
+            <div className="bh-auth-alert error" role="alert">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="bh-auth-alert success" role="status">
+              {success}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="bh-auth-form">
+            <div className="bh-auth-field">
+              <label htmlFor="auth-username">
+                Användarnamn
+              </label>
+
+              <input
+                id="auth-username"
+                type="text"
+                placeholder="Ditt användarnamn"
+                autoComplete="username"
+                value={username}
+                onChange={(event) =>
+                  setUsername(event.target.value)
+                }
+                required
+                minLength={2}
+              />
+            </div>
+
+            <div className="bh-auth-field">
+              <label htmlFor="auth-password">
+                Lösenord
+              </label>
+
+              <div className="bh-auth-password">
+                <input
+                  id="auth-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Ditt lösenord"
+                  autoComplete={
+                    isLogin
+                      ? "current-password"
+                      : "new-password"
+                  }
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  required
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword((prev) => !prev)
+                  }
+                  aria-label={
+                    showPassword
+                      ? "Dölj lösenord"
+                      : "Visa lösenord"
+                  }
+                >
+                  {showPassword ? "Dölj" : "Visa"}
+                </button>
+              </div>
+            </div>
+
+            <button
+              className="bh-auth-submit"
+              type="submit"
+              disabled={loading}
+            >
+              {loading
+                ? "Vänta..."
+                : isLogin
+                  ? "Logga in"
+                  : "Skapa konto"}
+              {!loading && <span aria-hidden="true">↗</span>}
+            </button>
+          </form>
+
+          <div className="bh-auth-switch">
+            <p>
+              {isLogin
+                ? "Har du inget konto ännu?"
+                : "Har du redan ett konto?"}
+            </p>
+
+            <button type="button" onClick={changeMode}>
+              {isLogin ? "Skapa ett konto" : "Logga in istället"}
+            </button>
+          </div>
+
+          <div className="bh-auth-bottom">
+            <span>En bok i taget, en berättelse i taget.</span>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
