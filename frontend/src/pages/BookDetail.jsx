@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../api";
 import StarRating from "../components/StarRating";
 import { useLocation } from "react-router-dom";
+import "../styles/BookDetail.css";
 
 export default function BookDetail() {
   const { id } = useParams();
@@ -22,7 +23,7 @@ export default function BookDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [isWantToRead, setIsWantToRead] = useState(false);
-  const [isReading, setIsReading] = useState(false); // Ny!
+  const [isReading, setIsReading] = useState(false);
 
   // Form states
   const [rating, setRating] = useState(3);
@@ -190,12 +191,12 @@ export default function BookDetail() {
     : "0.0";
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-[#1B1B1F] font-['Bricolage_Grotesque',system-ui,sans-serif]">
+    <div className="book-detail min-h-screen bg-[#FAFAFA] text-[#1B1B1F] font-['Bricolage_Grotesque',system-ui,sans-serif]">
       <header className="border-b border-[#E4E4E7] bg-white">
         <div className="mx-auto max-w-7xl px-4 pb-12 pt-10 md:pt-16">
           <Link to="/" className={`mb-8 inline-flex text-sm font-semibold text-[#30638E] hover:underline ${focusRing}`}>← Tillbaka till biblioteket</Link>
           <div className="flex flex-col gap-8 md:flex-row md:items-end md:gap-12">
-            <div className="relative w-40 shrink-0 sm:w-48">
+            <div className="relative w-44 shrink-0 sm:w-56 lg:w-64">
               {book.cover_url ? (
                 <img src={book.cover_url} alt={`Omslag till ${book.title}`} className="aspect-[2/3] w-full rounded-md border border-[#E4E4E7] object-cover shadow-xl" />
               ) : (
