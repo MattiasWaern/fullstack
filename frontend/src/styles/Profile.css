@@ -1,0 +1,485 @@
+
+/* =========================================
+   MYREADS - PROFILE
+========================================= */
+
+.bh-profile {
+  --green: #193d2d;
+  --muted: #748075;
+  --border: #e2d9ca;
+  --paper: #fffdf8;
+
+  min-height: 100vh;
+  background: #f8f5ed;
+  color: #20382b;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.bh-profile-container {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.bh-profile-header {
+  background: #f1eadd;
+  border-bottom: 1px solid var(--border);
+  padding: 35px 0 55px;
+}
+
+.bh-profile-back {
+  display: inline-block;
+  color: #496652;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 45px;
+}
+
+.bh-profile-back:hover {
+  text-decoration: underline;
+}
+
+.bh-profile-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 40px;
+}
+
+.bh-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  min-width: 0;
+}
+
+.bh-profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 105px;
+  height: 105px;
+  flex-shrink: 0;
+  background: var(--green);
+  color: #f5eddd;
+  border-radius: 50%;
+  font: 500 52px 'Newsreader', serif;
+}
+
+.bh-profile-identity h1 {
+  font: 500 clamp(38px, 5vw, 60px)/1.1 'Newsreader', serif;
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+
+.bh-profile-identity p {
+  font-size: 13px;
+  color: #718071;
+  line-height: 1.7;
+}
+
+.bh-profile-stats {
+  display: flex;
+  gap: 35px;
+  padding-bottom: 5px;
+}
+
+.bh-profile-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 75px;
+}
+
+.bh-profile-stats strong {
+  font: 500 36px 'Newsreader', serif;
+  color: var(--green);
+}
+
+.bh-profile-stats span {
+  color: #738071;
+  font-size: 11px;
+}
+
+.bh-profile-main {
+  padding-top: 50px;
+  padding-bottom: 100px;
+}
+
+.bh-profile-reading {
+  margin-bottom: 65px;
+}
+
+.bh-profile-section-heading {
+  margin-bottom: 26px;
+}
+
+.bh-profile-section-heading h2 {
+  font: 500 clamp(30px, 4vw, 40px)/1.15 'Newsreader', serif;
+  margin: 9px 0;
+  color: var(--green);
+}
+
+.bh-profile-section-heading p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* TABS */
+
+.bh-profile-tabs {
+  display: flex;
+  gap: 32px;
+  border-bottom: 1px solid var(--border);
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+.bh-profile-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid transparent;
+  padding: 14px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7a8479;
+  cursor: pointer;
+}
+
+.bh-profile-tabs button.active {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.bh-profile-tabs button span {
+  font-size: 10px;
+  padding: 4px 7px;
+  background: #e9e5da;
+  border-radius: 4px;
+}
+
+.bh-profile-tabs button.active span {
+  background: #e1e9df;
+}
+
+/* REVIEWS */
+
+.bh-review-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.bh-review-item {
+  display: flex;
+  gap: 30px;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.bh-review-item:first-child {
+  padding-top: 5px;
+}
+
+.bh-review-cover {
+  width: 125px;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.bh-review-cover img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 5px 8px 15px #332b241c;
+}
+
+.bh-review-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.bh-review-title {
+  display: block;
+  font: 500 29px/1.15 'Newsreader', serif;
+  margin-top: 10px;
+  color: var(--green);
+}
+
+.bh-review-title:hover {
+  text-decoration: underline;
+}
+
+.bh-review-rating {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 13px;
+}
+
+.bh-review-rating > span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.bh-review-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #526356;
+  font-size: 14px;
+  line-height: 1.9;
+  margin-top: 20px;
+  max-width: 720px;
+}
+
+.bh-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+  margin-top: 24px;
+}
+
+.bh-review-actions button {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2b644a;
+  cursor: pointer;
+}
+
+.bh-review-actions button:hover {
+  text-decoration: underline;
+}
+
+.bh-review-actions button.danger {
+  color: #a34e43;
+}
+
+.bh-review-actions button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.bh-review-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.bh-review-edit label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bh-review-edit textarea {
+  width: 100%;
+  border: 1px solid #d8d0c2;
+  background: #fffdf8;
+  border-radius: 4px;
+  padding: 14px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.bh-profile-button,
+.bh-review-actions button.bh-profile-button {
+  display: inline-block;
+  background: var(--green);
+  color: #fff;
+  border-radius: 4px;
+  padding: 12px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.bh-profile-button:hover,
+.bh-review-actions button.bh-profile-button:hover {
+  background: #2c6048;
+  text-decoration: none;
+}
+
+/* WANT TO READ */
+
+.bh-profile-book-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 25px;
+}
+
+.bh-profile-book {
+  min-width: 0;
+}
+
+.bh-profile-book-cover img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 4px 7px 14px #332b241c;
+  transition: transform .2s ease;
+}
+
+.bh-profile-book:hover img {
+  transform: translateY(-4px);
+}
+
+.bh-profile-book h3 {
+  font: 500 19px/1.2 'Newsreader', serif;
+  margin-top: 14px;
+  color: var(--green);
+  overflow-wrap: anywhere;
+}
+
+.bh-profile-book p {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.bh-profile-book > span {
+  display: inline-block;
+  color: #2b644a;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+/* EMPTY & FEEDBACK */
+
+.bh-profile-empty {
+  padding: 65px 25px;
+  text-align: center;
+  border: 1px dashed #d7cebf;
+  background: #fffdf8;
+}
+
+.bh-profile-empty h3 {
+  font: 500 28px 'Newsreader', serif;
+  color: var(--green);
+}
+
+.bh-profile-empty p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 12px 0 25px;
+}
+
+.bh-profile-error {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 15px 20px;
+  background: #f9e9e5;
+  border: 1px solid #e6bcb3;
+  color: #953e35;
+  font-size: 13px;
+  margin-bottom: 30px;
+}
+
+.bh-profile-loading {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  background: #f8f5ed;
+  color: #536c59;
+  font-size: 14px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+  .bh-profile-intro {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .bh-profile-book-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .bh-profile-container {
+    width: min(100% - 32px, 1180px);
+  }
+
+  .bh-profile-header {
+    padding: 25px 0 35px;
+  }
+
+  .bh-profile-back {
+    margin-bottom: 30px;
+  }
+
+  .bh-profile-identity {
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .bh-profile-avatar {
+    width: 65px;
+    height: 65px;
+    font-size: 32px;
+  }
+
+  .bh-profile-identity h1 {
+    font-size: 37px;
+  }
+
+  .bh-profile-stats {
+    width: 100%;
+    justify-content: space-between;
+    gap: 15px;
+  }
+
+  .bh-profile-stats strong {
+    font-size: 29px;
+  }
+
+  .bh-profile-main {
+    padding-top: 35px;
+  }
+
+  .bh-profile-tabs {
+    gap: 22px;
+  }
+
+  .bh-profile-tabs button {
+    font-size: 12px;
+  }
+
+  .bh-review-item {
+    gap: 17px;
+    padding: 24px 0;
+  }
+
+  .bh-review-cover {
+    width: 80px;
+  }
+
+  .bh-review-title {
+    font-size: 23px;
+  }
+
+  .bh-review-text {
+    font-size: 13px;
+  }
+
+  .bh-profile-book-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bh-profile-book-cover img {
+    transition: none;
+  }
+}
