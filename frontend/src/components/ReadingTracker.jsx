@@ -167,6 +167,39 @@ export default function ReadingTracker() {
     }
   }
 
+  async function removeProgress(book) {
+    const bookId = book.book_id;
+    if (updating[bookId]) return;
+
+    const confirmed = window.confirm(
+      `Vill du ta bort "${book.title}" från Reading Tracker? Dina sparade läsframsteg tas bort.`
+    );
+    if (!confirmed) return;
+
+    setUpdating((prev) => ({ ...prev, [bookId]: true }));
+    setMessages((prev) => ({ ...prev, [bookId]: null }));
+
+    try {
+      await api.delete(`/books/${bookId}/progress`);
+      setReadingList((prev) =>
+        prev.filter((item) => String(item.book_id) !== String(bookId))
+      );
+      setDraftPages((prev) => {
+        const next = { ...prev };
+        delete next[bookId];
+        return next;
+      });
+    } catch (error) {
+      setMessage(
+        bookId,
+        "error",
+        error.response?.data?.error || "Kunde inte ta bort boken från Reading Tracker."
+      );
+    } finally {
+      setUpdating((prev) => ({ ...prev, [bookId]: false }));
+    }
+  }
+
   function addPages(book, amount) {
     const {
       currentPage,
@@ -404,7 +437,15 @@ export default function ReadingTracker() {
                   </div>
                 </div>
               </div>
-
+                <button
+                  type="button"
+                  className="rt-remove-button"
+                  disabled={isUpdating}
+                  onClick={() => removeProgress(book)}
+                  aria-label={`Ta bort ${book.title} från Reading Tracker`}
+                >
+                  {isUpdating ? "Vänta..." : "Ta bort från Reading Tracker"}
+                </button>
               {message && (
                 <p
                   className={`rt-message rt-${message.type}`}

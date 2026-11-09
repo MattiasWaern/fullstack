@@ -52,6 +52,8 @@ router.get("/my/reading-progress", requireAuth, async (req, res) => {
     fail(res, e, "Kunde inte hämta lässtatus");
   }
 });
+
+
 router.post("/:id/progress", requireAuth, async (req, res) => {
   const page = req.body?.current_page;
   if (!Number.isSafeInteger(page) || page < 0)
@@ -80,6 +82,32 @@ router.post("/:id/progress", requireAuth, async (req, res) => {
     fail(res, e, "Kunde inte spara framsteg");
   }
 });
+
+router.delete("/:id/progress", requireAuth, async (req, res) => {
+  if (!validId(req.params.id)) {
+    return res.status(400).json({ error: "Ogiltigt bok-ID" });
+  }
+
+  try {
+    const { rowCount } = await db.query(
+      "DELETE FROM reading_progress WHERE user_id=$1 AND book_id=$2",
+      [req.user.id, req.params.id]
+    );
+
+    if (rowCount === 0) {
+      return res.status(404).json({
+        error: "Boken finns inte i din Reading Tracker"
+      });
+    }
+
+    res.json({
+      message: "Boken har tagits bort från Reading Tracker"
+    });
+  } catch (e) {
+    return fail(res, e, "Kunde inte ta bort läsframsteg");
+  }
+});
+
 router.get("/:id", async (req, res) => {
   if (!validId(req.params.id))
     return res.status(400).json({ error: "Ogiltigt bok-ID" });
